@@ -24,11 +24,11 @@ struct Memory
 			union Dptr  // Data pointer [82-83]
 			{
 				uint16_t DPTR; // [82-83]
-				struct Dptr_lh
+				struct Lh
 				{
 					uint8_t DPL; // [82] DPTR Data pointer low
 					uint8_t DPH; // [83] DPTR Data pointer high
-				} DPTR_lh;
+				} LH;
 			} DPTR;
 			
 			int32_t: 24;  //     Skip [84-86] 3 bytes
