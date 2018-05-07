@@ -1,4 +1,7 @@
 #include <string.h>
+#include <jansson.h>
+
+#include "headers/memory.h"
 
 void text_2_bin(const char cur_line[])
 {
@@ -61,22 +64,5 @@ void text_2_bin(const char cur_line[])
 
 uint8_t detect_mnemonic(char cur_line[])
 {
-	static const char instructions[] =
-		"nop   " // 00
-		"      " // 01
-		"      " // 02
-		"      " // 03
-		"      " // 04
-		"      " // 05
-		"      " // 06
-		"      " // 07
-		"      " // 08
-		"      " // 09
-		"      " // 0A
-		"      " // 0B
-		"      " // 0C
-		"      " // 0D
-		"      ";
-	
 	return 0;
 }
