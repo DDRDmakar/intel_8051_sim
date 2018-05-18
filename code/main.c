@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "headers/memory.h"
+#include "headers/mnemonic.h"
 
 void show_help(void) {}
 
@@ -25,7 +26,7 @@ int main(int argc, char** argv)
 				}
 			}
 			
-			for (int j = 1; j < strlen(argv[i]); ++j)
+			for (unsigned j = 1; j < strlen(argv[i]); ++j)
 			{
 				printf("Processing flag %c\n", argv[i][j]);
 				
@@ -72,6 +73,8 @@ int main(int argc, char** argv)
 	{
 		
 	}*/
+	
+	setup_memory(&m);
 	
 	return 0;
 }

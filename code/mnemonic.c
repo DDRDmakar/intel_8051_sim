@@ -1,19 +1,54 @@
 #include <string.h>
+#include <stdio.h>
 #include <jansson.h>
 
-#include "headers/memory.h"
+#include "headers/mnemonic.h"
+#include "headers/file.h"
 
-void text_2_bin(const char cur_line[])
+void text_2_bin(uint8_t storage[], const char *line, const unsigned int memory_size);
+uint8_t detect_mnemonic(char *line);
+void push_mnemonic(uint8_t storage[], const unsigned int addr, char *line);
+void lowercase(char *line);
+
+void setup_memory(struct Memory *mem)
 {
-	const unsigned int len = strlen(cur_line);
+	// Get JSON object of memory
+    char *json_text = load_file("");
+	json_error_t error;
+    json_t *root = json_loads(json_text, 0, &error);
+	// TODO check parse error here
+	free(json_text);
 	
-	char part[9]; // One byte (mnemonic or integer)
-	unsigned short part_pointer = 0; // "part" array length
+    json_t *memory_dump = json_object_get(root, "program");
+	if (memory_dump == NULL || !json_is_string(memory_dump)) {} /*TODO exit here*/
+	char *plain_text = (char*)json_string_value(memory_dump);
+	text_2_bin(mem->PM.EPM, plain_text, sizeof(mem->PM.EPM));
+	free(memory_dump);
+	free(plain_text);
+	
+    memory_dump = json_object_get(root, "data");
+	if (memory_dump == NULL || !json_is_string(memory_dump)) {} /*TODO exit here*/
+	plain_text = (char*)json_string_value(memory_dump);
+	text_2_bin(mem->DM.EDM, plain_text, sizeof(mem->DM.EDM));
+	free(memory_dump);
+	free(plain_text);
+}
+
+void text_2_bin(uint8_t storage[], const char *line, const unsigned int memory_size)
+{
+	const unsigned int len = strlen(line);
+	
+	unsigned int memory_address = 0; // Position to push byte into
+	
+	char part[256]; // One byte (mnemonic or integer)
+	unsigned part_pointer = 0; // "part" array length
 	char quote = 0; // If current part of text is commented
 	
-	for (int i = 0; i < len; ++i) // Iterate through symbols
+	for (unsigned i = 0; i < len; ++i) // Iterate through symbols
 	{
-		const char e = cur_line[i]; // Current symbol
+		if (memory_address >= memory_size) {/*TODO exit here*/}
+		
+		const char e = line[i]; // Current symbol
 		
 		if (e == '\'') // If we see quote
 		{
@@ -21,7 +56,7 @@ void text_2_bin(const char cur_line[])
 			{
 				part[part_pointer] = '\0'; // End string
 				part_pointer = 0;
-				// TODO Call function here
+				push_mnemonic(storage, memory_address++, part);
 			}
 			
 			quote = !quote; // Change quotation flag
@@ -35,16 +70,8 @@ void text_2_bin(const char cur_line[])
 			{
 				part[part_pointer] = '\0'; // End string
 				part_pointer = 0;
-				// TODO Call function here
+				push_mnemonic(storage, memory_address++, part);
 			}
-			continue;
-		}
-		
-		if (part_pointer == 8) // If "part" string is full
-		{
-			part[part_pointer] = '\0'; // End string
-			part_pointer = 0;
-			// TODO Call function here
 			continue;
 		}
 		
@@ -54,15 +81,131 @@ void text_2_bin(const char cur_line[])
 			part[part_pointer] = '\0'; // End string
 			part_pointer = 0;
 			--i;
-			// TODO Call function here
+			push_mnemonic(storage, memory_address++, part);
 			continue;
 		}
 		
 		part[part_pointer++] = e; // Add symbol into "part" string
+		
+		if (part_pointer == 255) // if "part" array is full
+		{
+			part[part_pointer] = '\0'; // End string
+			push_mnemonic(storage, memory_address++, part);
+			break;
+		}
 	}
 }
 
-uint8_t detect_mnemonic(char cur_line[])
+void push_mnemonic(uint8_t storage[], const unsigned int addr, char *line)
 {
-	return 0;
+	uint8_t value = detect_mnemonic(line);
+	storage[addr] = value;
+}
+
+uint8_t detect_mnemonic(char *line)
+{
+	if (strlen(line) == 0)
+	{
+		printf("WARNING - empty mnemonic!");
+		return 0; // NOP
+	}
+	
+	uint8_t value;
+	
+	switch (line[0])
+	{
+		case '#':
+		{
+			// Check string length
+			if (strlen(line) < 2 || 3 < strlen(line))
+			{
+				printf("ERROR - incorrect mnemonic %s\n", line);
+				// TODO exit here
+				return 0;
+			}
+			
+			// Check symbols range
+			for (unsigned i = 1; i < strlen(line); ++i)
+			{
+				if (
+					!('0' <= line[i] && line[i] <= '9') &&
+					!('a' <= line[i] && line[i] <= 'f')
+				)
+				{
+					printf("ERROR - incorrect mnemonic %s\n", line);
+					// TODO exit here
+					return 0;
+				}
+			}
+			
+			char *strvalue = &line[1];
+			value = (uint8_t) strtoul(strvalue, NULL, 16);
+		}
+		
+		case '*':
+		{
+			// Check string length
+			if (strlen(line) < 2 || 4 < strlen(line))
+			{
+				printf("ERROR - incorrect mnemonic %s\n", line);
+				// TODO exit here
+				return 0;
+			}
+			
+			// Check symbols range
+			for (unsigned i = 1; i < strlen(line); ++i)
+			{
+				if (line[i] < '0' && '9' < line[i])
+				{
+					printf("ERROR - incorrect mnemonic %s\n", line);
+					// TODO exit here
+					return 0;
+				}
+			}
+			
+			char *strvalue = &line[1];
+			value = (uint8_t) strtoul(strvalue, NULL, 10);
+		}
+		
+		case '0': {} // Go down
+		case '1':
+		{
+			// Check string length
+			if (strlen(line) < 1 || 8 < strlen(line))
+			{
+				printf("ERROR - incorrect mnemonic %s\n", line);
+				// TODO exit here
+				return 0;
+			}
+			
+			// Check symbols range
+			for (unsigned i = 1; i < strlen(line); ++i)
+			{
+				if (line[i] != '0' && line[i] != '1')
+				{
+					printf("ERROR - incorrect mnemonic %s\n", line);
+					// TODO exit here
+					return 0;
+				}
+			}
+			
+			value = (uint8_t) strtoul(line, NULL, 2);
+		}
+		
+		default:
+		{
+			value = 0;
+			// TODO look in JSON here
+		}
+	}
+	
+	return value;
+}
+
+void lowercase(char *line)
+{
+	for (unsigned i = 0; i < strlen(line); ++i)
+	{
+		if ('A' <= line[i] && line[i] <= 'Z') line[i] += ('z' - 'Z');
+	}
 }
