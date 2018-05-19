@@ -13,7 +13,7 @@ void lowercase(char *line);
 void setup_memory(struct Memory *mem)
 {
 	// Get JSON object of memory
-    char *json_text = load_file("");
+    char *json_text = read_file("memory.json");
 	json_error_t error;
     json_t *root = json_loads(json_text, 0, &error);
 	// TODO check parse error here

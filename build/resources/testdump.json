@@ -1,0 +1,13 @@
+{
+"program": 
+"
+nop NOP nop
+mov_r2_d *55 #D3
+SUBB_A_R0
+MOV_RDM_AD *128 *128
+",
+"data":
+"
+11110000
+"
+}

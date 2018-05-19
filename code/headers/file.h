@@ -2,6 +2,7 @@
 #ifndef __FILES__
 #define __FILES__
 
-char* load_file(const char *filename);
+char* read_file(const char *filename);
+void write_file(const char *filename, const char *str);
 
 #endif
