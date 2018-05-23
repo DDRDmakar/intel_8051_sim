@@ -1,13 +1,21 @@
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "headers/memory.h"
 #include "headers/mnemonic.h"
+#include "headers/extvar.h"
+
+struct Extvar *extvar;
 
 void show_help(void) {}
 
 int main(int argc, char** argv)
 {
+	extvar = (struct Extvar*)malloc(sizeof(struct Extvar));
+	extvar->EDM_active = 1;
+	extvar->EPM_active = 1;
+	
 	for (int i = 0; i < argc; ++i)
 	{
 		printf("%s\n", argv[i]);
@@ -69,12 +77,20 @@ int main(int argc, char** argv)
 	printf("#F0 = %d	", m.DM.EDM[0xF0]);
 	printf("B = %d\n", m.DM.RDM.B);
 	
-	/*for (uint16_t i = 220; i < 230; ++i)
-	{
-		
-	}*/
 	
+	// Распарсить входной файл на кусочки
+	// Добыть алфавит мнемоник
+	// Перевести текстовые мнемоники в инструкции
+	
+	setup_mnemonics_alphabet();
 	setup_memory(&m);
+	
+	
+	
+	
+	free_mnemonics_alphabet();
+	
+	free(extvar);
 	
 	return 0;
 }

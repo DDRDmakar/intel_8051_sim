@@ -5,7 +5,7 @@
 #include "headers/file.h"
 #include "headers/error.h"
 
-char* read_file(const char *filename)
+char* read_text_file(const char *filename)
 {
 	// declare a file pointer
 	FILE *infile = fopen(filename, "r");
@@ -34,7 +34,7 @@ char* read_file(const char *filename)
 	return buffer;
 }
 
-void write_file(const char *filename, const char *str)
+void write_text_file(const char *filename, const char *str)
 {
 	FILE *f = fopen(filename, "a");
 	if(f == NULL)

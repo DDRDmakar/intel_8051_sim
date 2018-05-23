@@ -2,3 +2,5 @@ build/sim8051
 *.o
 *.directory
 *.kdev4
+build/8051_errorlog.txt
+

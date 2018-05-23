@@ -2,6 +2,11 @@
 #ifndef __MEM__
 #define __MEM__
 
+#define RPM_SIZE 4096
+#define EPM_SIZE 65536
+#define RDM_SIZE 256
+#define EDM_SIZE 65536
+
 #include <stdint.h>
 
 // TODO bit addressing features (page 19)
@@ -82,6 +87,9 @@ struct Memory
 		// 16 bit address
 		uint8_t EPM[65536]; // 64K external program memory
 	} PM;
+	
+	char **DM_str;
+	char **PM_str;
 };
 
 #endif

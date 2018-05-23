@@ -2,7 +2,7 @@
 
 CC=gcc
 DIR=../code/
-OPT := -lm -Os -std=c11 -pedantic -Wextra -Wall -l jansson
+OPT := -g -lm -Os -std=c11 -pedantic -Wextra -Wall -l jansson
 BIN_NAME=sim8051
 
 prog: main.o mnemonic.o file.o error.o
