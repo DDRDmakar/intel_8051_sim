@@ -6,9 +6,14 @@
 
 struct Extvar
 {
-	unsigned
+	unsigned int
 		EPM_active, 
-		EDM_active;
+		EDM_active,
+		clk,
+		verbose;
+	char
+		*location,
+		*output_file_name;
 };
 
 extern struct Extvar *extvar;

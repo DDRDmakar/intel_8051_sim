@@ -65,7 +65,7 @@ void setup_memory(struct Memory *mem)
 	if (extvar->EPM_active)
 		fill_memory(mem->DM.EDM, &mem->DM_str, plain_text, EDM_SIZE);
 	else
-		fill_memory(mem->DM.EDM, &mem->DM_str, plain_text, RDM_SIZE);
+		fill_memory(mem->DM.RDM, &mem->DM_str, plain_text, RDM_SIZE);
 	free(plain_text);
 	
 	free(root);
@@ -198,7 +198,7 @@ uint8_t detect_mnemonic(char *line)
 			if (strlen(line) < 2 || 3 < strlen(line))
 			{
 				char *err = (char*)malloc(300 * sizeof(char));
-				sprintf(err, "ERROR - incorrect value %s\n", line);
+				sprintf(err, "ERROR - incorrect value %s", line);
 				progstop(err, 1);
 				return 0;
 			}
@@ -212,7 +212,7 @@ uint8_t detect_mnemonic(char *line)
 				)
 				{
 					char *err = (char*)malloc(300 * sizeof(char));
-					sprintf(err, "ERROR - incorrect value %s\n", line);
+					sprintf(err, "ERROR - incorrect value %s", line);
 					progstop(err, 1);
 					return 0;
 				}
@@ -229,7 +229,7 @@ uint8_t detect_mnemonic(char *line)
 			if (strlen(line) < 2 || 4 < strlen(line))
 			{
 				char *err = (char*)malloc(300 * sizeof(char));
-				sprintf(err, "ERROR - incorrect value %s\n", line);
+				sprintf(err, "ERROR - incorrect value %s", line);
 				progstop(err, 1);
 				return 0;
 			}
@@ -240,7 +240,7 @@ uint8_t detect_mnemonic(char *line)
 				if (line[i] < '0' || '9' < line[i])
 				{
 					char *err = (char*)malloc(300 * sizeof(char));
-					sprintf(err, "ERROR - incorrect value %s\n", line);
+					sprintf(err, "ERROR - incorrect value %s", line);
 					progstop(err, 1);
 					return 0;
 				}
@@ -258,7 +258,7 @@ uint8_t detect_mnemonic(char *line)
 			if (strlen(line) < 1 || 8 < strlen(line))
 			{
 				char *err = (char*)malloc(300 * sizeof(char));
-				sprintf(err, "ERROR - incorrect value %s\n", line);
+				sprintf(err, "ERROR - incorrect value %s", line);
 				progstop(err, 1);
 				return 0;
 			}
@@ -269,7 +269,7 @@ uint8_t detect_mnemonic(char *line)
 				if (line[i] != '0' && line[i] != '1')
 				{
 					char *err = (char*)malloc(300 * sizeof(char));
-					sprintf(err, "ERROR - incorrect value %s\n", line);
+					sprintf(err, "ERROR - incorrect value %s", line);
 					progstop(err, 1);
 					return 0;
 				}
