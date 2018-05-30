@@ -1,9 +1,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "headers/file.h"
 #include "headers/error.h"
+#include "headers/extvar.h"
 
 char* read_text_file(const char *filename)
 {
@@ -36,12 +38,16 @@ char* read_text_file(const char *filename)
 
 void write_text_file(const char *filename, const char *str)
 {
-	FILE *f = fopen(filename, "a");
-	if(f == NULL)
+	char *f = (char*)malloc((strlen(filename)+strlen(extvar->location) + 1) * sizeof(char));
+	strcpy(f, extvar->location);
+	strcat(f, filename);
+	
+	FILE *outfile = fopen(f, "a");
+	if(outfile == NULL)
 	{
 		printf("Error creating error log file!\n");
 		exit(1);
 	}
-	fprintf(f, "%s\n", str);
-	fclose(f);
+	fprintf(outfile, "%s\n", str);
+	fclose(outfile);
 }

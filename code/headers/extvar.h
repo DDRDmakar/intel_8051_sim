@@ -2,7 +2,7 @@
 #ifndef __EXTVAR__
 #define __EXTVAR__
 
-#include <stdint.h>
+#include "memory.h"
 
 struct Extvar
 {
@@ -10,10 +10,18 @@ struct Extvar
 		EPM_active, 
 		EDM_active,
 		clk,
-		verbose;
+		debug,
+		mode, // 0 - bin; 1 - text;
+		verbose,
+		produce_file;
 	char
 		*location,
+		*input_file_name,
 		*output_file_name;
+	
+	int 
+		*breakpoints,  // 0 - nothing; -1 - before; 1 - after
+		*savepoints;   // 0 - nothing; -1 - before; 1 - after
 };
 
 extern struct Extvar *extvar;

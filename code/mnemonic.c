@@ -13,20 +13,19 @@ json_t *mnemo;
 
 void fill_memory(uint8_t storage[], char ***storage_str, const char *line, const unsigned int memory_size);
 void push_word(char **storage, const unsigned int addr, char *line);
-void push_mnemonic(uint8_t storage[], const unsigned int addr, char *line);
+int push_mnemonic(uint8_t storage[], const unsigned int addr, char *line);
 uint8_t get_mnemonic_from_file(char *name);
-uint8_t detect_mnemonic(char *line);
+int32_t detect_mnemonic(char *line);
 
 
 void setup_memory(struct Memory *mem)
 {
-	char *filename = "resources/testdump.json";
 	// Get JSON object of memory
-	char *str_state = read_text_file(filename);
+	char *str_state = read_text_file(extvar->input_file_name);
 	if (str_state == NULL)
 	{
 		char *err = (char*)malloc(100 * sizeof(char));
-		sprintf(err, "Error opening memory file \"%s\"", filename);
+		sprintf(err, "Error opening memory file \"%s\"", extvar->input_file_name);
 		progstop(err, 1);
 	}
 	
@@ -38,7 +37,7 @@ void setup_memory(struct Memory *mem)
 	if (root == NULL)
 	{
 		char *err = (char*)malloc(100 * sizeof(char));
-		sprintf(err, "Error parsing memory file \"%s\"", filename);
+		sprintf(err, "Error parsing memory file \"%s\"", extvar->input_file_name);
 		progstop(err, 1);
 	}
 	
@@ -102,8 +101,8 @@ void fill_memory(uint8_t storage[], char ***storage_str, const char *line, const
 			{
 				part[part_pointer] = '\0'; // End string
 				part_pointer = 0;
-				push_mnemonic(storage, memory_address, part);
-				push_word(*storage_str, memory_address++, part);
+				push_word(*storage_str, memory_address, part);
+				if (push_mnemonic(storage, memory_address++, part)) memory_address--;
 			}
 			
 			quote = !quote; // Change quotation flag
@@ -117,8 +116,8 @@ void fill_memory(uint8_t storage[], char ***storage_str, const char *line, const
 			{
 				part[part_pointer] = '\0'; // End string
 				part_pointer = 0;
-				push_mnemonic(storage, memory_address, part);
-				push_word(*storage_str, memory_address++, part);
+				push_word(*storage_str, memory_address, part);
+				if (push_mnemonic(storage, memory_address++, part)) memory_address--;
 			}
 			continue;
 		}
@@ -129,8 +128,8 @@ void fill_memory(uint8_t storage[], char ***storage_str, const char *line, const
 			part[part_pointer] = '\0'; // End string
 			part_pointer = 0;
 			--i;
-			push_mnemonic(storage, memory_address, part);
-			push_word(*storage_str, memory_address++, part);
+			push_word(*storage_str, memory_address, part);
+			if (push_mnemonic(storage, memory_address++, part)) memory_address--;
 			continue;
 		}
 		
@@ -139,8 +138,8 @@ void fill_memory(uint8_t storage[], char ***storage_str, const char *line, const
 		if (part_pointer == MAX_MNEMONIC_LENGTH-1) // if "part" array is full
 		{
 			part[part_pointer] = '\0'; // End string
-			push_mnemonic(storage, memory_address, part);
-			push_word(*storage_str, memory_address++, part);
+			push_word(*storage_str, memory_address, part);
+			if (push_mnemonic(storage, memory_address++, part)) memory_address--;
 			break;
 		}
 	}
@@ -149,15 +148,53 @@ void fill_memory(uint8_t storage[], char ***storage_str, const char *line, const
 void push_word(char **storage, const unsigned int addr, char *line)
 {
 	char *newline = (char*)malloc((strlen(line)+1) * sizeof(char));
+	if (strlen(line) > 0 && (line[0] == '^' || line[0] == '_')) return;
 	strcpy(newline, line);
 	printf("Pushing \"%s\" into addr %d\n", newline, addr);
 	storage[addr] = newline;
 }
 
-void push_mnemonic(uint8_t storage[], const unsigned int addr, char *line)
+int push_mnemonic(uint8_t storage[], const unsigned int addr, char *line)
 {
-	uint8_t value = detect_mnemonic(line);
-	storage[addr] = value;
+	int32_t value = detect_mnemonic(line);
+	switch (value)
+	{
+		case -1:
+		{
+			if (addr+1 < RPM_SIZE) extvar->breakpoints[addr+1] = -1; // Break before next instruction
+			return 1;
+			break;
+		}
+		case -2:
+		{
+			if (addr+1 < RPM_SIZE) extvar->savepoints[addr+1] = -1; // Snapshot before next instruction
+			return 1;
+			break;
+		}
+		case -3:
+		{
+			if (addr != 0) extvar->breakpoints[addr-1] = 1; // Break after previous instruction
+			return 1;
+			break;
+		}
+		case -4:
+		{
+			if (addr != 0) extvar->savepoints[addr-1] = 1; // Snapshot after previous instruction
+			return 1;
+			break;
+		}
+		default: 
+		{
+			if (value >= 0 && value < 256) storage[addr] = value;
+			else
+			{
+				char *err = (char*)malloc(100 * sizeof(char));
+				sprintf(err, "ERROR - incorrect mnemonic value %d", value);
+				progstop(err, 1);
+			}
+		}
+	}
+	return 0;
 }
 
 uint8_t get_mnemonic_from_file(char *name)
@@ -180,7 +217,7 @@ uint8_t get_mnemonic_from_file(char *name)
 	return value;
 }
 
-uint8_t detect_mnemonic(char *line)
+int32_t detect_mnemonic(char *line)
 {
 	if (strlen(line) == 0)
 	{
@@ -279,13 +316,29 @@ uint8_t detect_mnemonic(char *line)
 			break;
 		}
 		
+		case '_':
+		{
+			value = 0;
+			if (strcmp(line, "_break") == 0) return -1; // Break before next instruction
+			if (strcmp(line, "_save") == 0) return -2; // Snapshot before next instruction
+			break;
+		}
+		
+		case '^':
+		{
+			value = 0;
+			if (strcmp(line, "^break") == 0) return -3; // Break after previous instruction
+			if (strcmp(line, "^save") == 0) return -4; // Snapshot after previous instruction
+			break;
+		}
+		
 		default:
 		{
 			value = get_mnemonic_from_file(line);
 		}
 	}
 	
-	return value;
+	return (int32_t)value;
 }
 
 void lowercase(char *line)
@@ -299,7 +352,10 @@ void lowercase(char *line)
 
 void setup_mnemonics_alphabet(void)
 {
-	const char *filename = "resources/mnemonics.json";
+	char *filename = (char*)malloc((strlen(extvar->location) + 15 + 10 + 1) * sizeof(char));
+	strcpy(filename, extvar->location);
+	strcat(filename, "resources/mnemonics.json");
+	
 	json_error_t error;
 	mnemo = json_load_file(filename, 0, &error);
 	

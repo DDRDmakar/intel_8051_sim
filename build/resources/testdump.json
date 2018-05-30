@@ -1,8 +1,8 @@
 {
 	"program":
 	"
-		nop NOP nop
-		mov_r2_d *55 #D3
+		nop NOP ^break nop
+		mov_r2_d *55
 		SUBB_A_R0
 		MOV_RDM1_AD *128 *128
 	",
