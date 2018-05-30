@@ -42,7 +42,7 @@ void write_text_file(const char *filename, const char *str)
 	strcpy(f, extvar->location);
 	strcat(f, filename);
 	
-	FILE *outfile = fopen(f, "a");
+	FILE *outfile = fopen(f, "w");
 	if(outfile == NULL)
 	{
 		printf("Error creating error log file!\n");

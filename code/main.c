@@ -34,11 +34,6 @@ int main(int argc, char** argv)
 	if (lastslash) { if (strlen(lastslash) > 1) lastslash[1] = '\0'; }
 	else extvar->location[0] = 0;
 	
-	for (int i = 0; i < argc; ++i)
-	{
-		printf("%s\n", argv[i]);
-	}
-	
 	// Parse args
 	for (int i = 1; i < argc; ++i)
 	{
@@ -59,8 +54,6 @@ int main(int argc, char** argv)
 			
 			for (unsigned j = 1; j < strlen(argv[i]); ++j)
 			{
-				printf("Processing flag %c\n", argv[i][j]);
-				
 				switch (argv[i][j])
 				{
 					case 'h': { show_help(); return 0;}
@@ -157,12 +150,14 @@ int main(int argc, char** argv)
 		leave_flag_loop:;
 	}
 	
-	if (extvar->output_file_name == NULL) extvar->output_file_name = "memory";
+	if (extvar->output_file_name == NULL) extvar->output_file_name = "memory.json";
 	if (extvar->input_file_name == NULL) progstop("Error - input file name is not set." ,1);;
 	
+	/*
 	printf("STRUCTURE OF EXTVAR:\n\tEPM\t%d\n\tEDM\t%d\n\tclk\t%d\n\tdebug\t%d\n\tmode\t%d\n\tverbose\t%d\n\tproduce_file\t%d\n\tlocation\t%s\n\toutput file name\t%s\n\tinput file name\t%s\n",
 		extvar->EPM_active, extvar->EDM_active, extvar->clk, extvar->debug, extvar->mode, extvar->verbose, extvar->produce_file, extvar->location, extvar->output_file_name, extvar->input_file_name
 	);
+	*/
 	
 	struct Memory m;
 	m.PC = 0;

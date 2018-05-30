@@ -147,6 +147,7 @@ I(xch_a_ad)
 	uint8_t t = FUNREGS.ACC;
 	FUNREGS.ACC = DATAMEM[INSTR(1)];
 	DATAMEM[INSTR(1)] = t;
+	IncrPC_1;
 }
 
 I(xch_a_rdm)
@@ -205,6 +206,7 @@ I(add_a_ad)
 	PSWBITS.OV = ((FUNREGS.ACC & 0x7F) + (DATAMEM[INSTR(1)] & 0x7F) > 127) ? 1 : 0;
 	FUNREGS.ACC += DATAMEM[INSTR(1)];
 	PSWBITS.P = is_odd(FUNREGS.ACC);
+	IncrPC_1;
 }
 
 
@@ -281,7 +283,7 @@ struct Instruction_storage instr[256] =
 	{NULL, 0, 0}, // [0x22] [0b00100010]
 	{NULL, 0, 0}, // [0x23] [0b00100011]
 	{NULL, 0, 0}, // [0x24] [0b00100100]
-	{NULL, 0, 0}, // [0x25] [0b00100101]
+	{&add_a_ad, 2, 1}, // [0x25] [0b00100101]
 	{NULL, 0, 0}, // [0x26] [0b00100110]
 	{NULL, 0, 0}, // [0x27] [0b00100111]
 	{NULL, 0, 0}, // [0x28] [0b00101000]
@@ -361,7 +363,7 @@ struct Instruction_storage instr[256] =
 	{NULL, 0, 0}, // [0x72] [0b01110010]
 	{NULL, 0, 0}, // [0x73] [0b01110011]
 	{NULL, 0, 0}, // [0x74] [0b01110100]
-	{NULL, 0, 0}, // [0x75] [0b01110101]
+	{&mov_ad_d, 3, 2}, // [0x75] [0b01110101]
 	{NULL, 0, 0}, // [0x76] [0b01110110]
 	{NULL, 0, 0}, // [0x77] [0b01110111]
 	{&mov_rn_d, 2, 1}, // [0x78] [0b01111000]

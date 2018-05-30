@@ -150,7 +150,6 @@ void push_word(char **storage, const unsigned int addr, char *line)
 	char *newline = (char*)malloc((strlen(line)+1) * sizeof(char));
 	if (strlen(line) > 0 && (line[0] == '^' || line[0] == '_')) return;
 	strcpy(newline, line);
-	printf("Pushing \"%s\" into addr %d\n", newline, addr);
 	storage[addr] = newline;
 }
 
@@ -199,8 +198,6 @@ int push_mnemonic(uint8_t storage[], const unsigned int addr, char *line)
 
 uint8_t get_mnemonic_from_file(char *name)
 {
-	printf("CURRENT MNEMONIC IS: |%s|\n", name);
-	
 	if (mnemo == NULL) progstop("Error - mnemonics alphabet config was not set set up", 1);
 	
 	json_t *current_mnemonic = json_object_get(mnemo, name);
@@ -213,7 +210,6 @@ uint8_t get_mnemonic_from_file(char *name)
 	
 	// Get node contents
 	uint8_t value = (uint8_t)json_integer_value(current_mnemonic); // (char*)memory_dump->children->content;
-	printf("MNEMONIC: %s	CODE: %d\n", name, value);
 	return value;
 }
 
@@ -221,7 +217,6 @@ int32_t detect_mnemonic(char *line)
 {
 	if (strlen(line) == 0)
 	{
-		printf("WARNING - empty mnemonic!");
 		return 0; // NOP
 	}
 	
