@@ -7,7 +7,7 @@
 void errlog(const char *message)
 {
 	time_t timer;
-	char buffer[26];
+	char buffer[26]; // Max 26 chars in date
 	struct tm *tm_info;
 	time(&timer);
 	tm_info = localtime(&timer);
@@ -16,7 +16,7 @@ void errlog(const char *message)
 	FILE *f = fopen("8051_errorlog.txt", "a");
 	if(f == NULL)
 	{
-		printf("Error creating error log file!\n");
+		fprintf(stderr, "Error creating error log file!\n");
 		exit(1);
 	}
 	fprintf(f, "%s    %s\n", buffer, message);

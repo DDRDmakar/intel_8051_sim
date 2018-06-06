@@ -13,4 +13,6 @@ void free_mnemonics_alphabet(void);
 
 extern json_t *mnemo;
 
+#define MAX_MNEMONIC_LENGTH 256
+
 #endif

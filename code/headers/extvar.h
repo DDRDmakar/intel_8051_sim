@@ -15,7 +15,7 @@ struct Extvar
 		verbose,
 		produce_file;
 	char
-		*location,
+		*CWD,
 		*input_file_name,
 		*output_file_name;
 	

@@ -36,18 +36,28 @@ char* read_text_file(const char *filename)
 	return buffer;
 }
 
+char* read_text_file_resources(const char *filename)
+{
+	char *str_resources = "resources/";
+	char *newfilename = (char*)malloc((strlen(extvar->CWD) + strlen(str_resources) + strlen(filename) + 1) * sizeof(char));
+	MALLOC_NULL_CHECK(newfilename);
+	sprintf(newfilename, "%s%s%s", extvar->CWD, str_resources, filename);
+	return read_text_file(newfilename);
+}
+
 void write_text_file(const char *filename, const char *str)
 {
-	char *f = (char*)malloc((strlen(filename)+strlen(extvar->location) + 1) * sizeof(char));
-	strcpy(f, extvar->location);
-	strcat(f, filename);
-	
-	FILE *outfile = fopen(f, "w");
-	if(outfile == NULL)
-	{
-		printf("Error creating error log file!\n");
-		exit(1);
-	}
+	FILE *outfile = fopen(filename, "w");
+	if(!outfile) progstop("Error creating file!\n", 1);
 	fprintf(outfile, "%s\n", str);
 	fclose(outfile);
+}
+
+void write_text_file_resources(const char *filename, const char *str)
+{
+	char *str_resources = "resources/";
+	char *newfilename = (char*)malloc((strlen(extvar->CWD) + strlen(str_resources) + strlen(filename) + 1) * sizeof(char));
+	MALLOC_NULL_CHECK(newfilename);
+	sprintf(newfilename, "%s%s%s", extvar->CWD, str_resources, filename);
+	write_text_file(newfilename, str);
 }

@@ -5,8 +5,7 @@
 #include "headers/file.h"
 #include "headers/error.h"
 #include "headers/extvar.h"
-
-#define MAX_MNEMONIC_LENGTH 256
+#include "headers/tools.h"
 
 json_t *mnemo;
 
@@ -24,8 +23,10 @@ void setup_memory(struct Memory *mem)
 	char *str_state = read_text_file(extvar->input_file_name);
 	if (str_state == NULL)
 	{
-		char *err = (char*)malloc(100 * sizeof(char));
-		sprintf(err, "Error opening memory file \"%s\"", extvar->input_file_name);
+		const char *err_msg = "Error opening memory file \"%s\"";
+		char *err = (char*)malloc((strlen(err_msg) + strlen(extvar->input_file_name) + 1) * sizeof(char));
+		MALLOC_NULL_CHECK(err);
+		sprintf(err, err_msg, extvar->input_file_name);
 		progstop(err, 1);
 	}
 	
@@ -36,8 +37,10 @@ void setup_memory(struct Memory *mem)
 	json_t *root = json_loads(str_state, 0, &error);
 	if (root == NULL)
 	{
-		char *err = (char*)malloc(100 * sizeof(char));
-		sprintf(err, "Error parsing memory file \"%s\"", extvar->input_file_name);
+		const char *err_msg = "Error parsing memory file \"%s\"";
+		char *err = (char*)malloc((strlen(err_msg) + strlen(extvar->input_file_name) + 1) * sizeof(char));
+		MALLOC_NULL_CHECK(err);
+		sprintf(err, err_msg, extvar->input_file_name);
 		progstop(err, 1);
 	}
 	
@@ -83,13 +86,17 @@ void fill_memory(uint8_t storage[], char ***storage_str, const char *line, const
 	
 	// Allocate memory for storage
 	*storage_str = (char**)malloc(memory_size * sizeof(char*));
+	MALLOC_NULL_CHECK(storage_str);
 	
 	for (unsigned i = 0; i < len; ++i) // Iterate through symbols
 	{
 		if (memory_address >= memory_size)
 		{
-			char *err = (char*)malloc(100 * sizeof(char));
-			sprintf(err, "Error - memory dump size is bigger than available memort (%d bytes)", memory_size);
+			// 11 characters in memory size
+			const char *err_msg = "Error - memory dump size is bigger than available memort (%d bytes)";
+			char *err = (char*)malloc((strlen(err_msg) + 11 + 1) * sizeof(char));
+			MALLOC_NULL_CHECK(err);
+			sprintf(err, err_msg, memory_size);
 			progstop(err, 1);
 		}
 		
@@ -148,6 +155,7 @@ void fill_memory(uint8_t storage[], char ***storage_str, const char *line, const
 void push_word(char **storage, const unsigned int addr, char *line)
 {
 	char *newline = (char*)malloc((strlen(line)+1) * sizeof(char));
+	MALLOC_NULL_CHECK(newline);
 	if (strlen(line) > 0 && (line[0] == '^' || line[0] == '_')) return;
 	strcpy(newline, line);
 	storage[addr] = newline;
@@ -187,8 +195,11 @@ int push_mnemonic(uint8_t storage[], const unsigned int addr, char *line)
 			if (value >= 0 && value < 256) storage[addr] = value;
 			else
 			{
-				char *err = (char*)malloc(100 * sizeof(char));
-				sprintf(err, "ERROR - incorrect mnemonic value %d", value);
+				const char *err_msg = "ERROR - incorrect mnemonic value %d";
+				// 11 charachers for address
+				char *err = (char*)malloc((strlen(err_msg) + 11 + 1) * sizeof(char));
+				MALLOC_NULL_CHECK(err);
+				sprintf(err, err_msg, value);
 				progstop(err, 1);
 			}
 		}
@@ -203,14 +214,25 @@ uint8_t get_mnemonic_from_file(char *name)
 	json_t *current_mnemonic = json_object_get(mnemo, name);
 	if (current_mnemonic == NULL || !json_is_integer(current_mnemonic))
 	{
-		char *err = (char*)malloc(100 * sizeof(char));
-		sprintf(err, "Error - mnemonic \"%s\" not found", name);
+		const char *err_msg = "Error - mnemonic \"%s\" not found";
+		char *err = (char*)malloc((strlen(err_msg) + strlen(name) + 1) * sizeof(char));
+		MALLOC_NULL_CHECK(err);
+		sprintf(err, err_msg, name);
 		progstop(err, 1);
 	}
 	
 	// Get node contents
 	uint8_t value = (uint8_t)json_integer_value(current_mnemonic); // (char*)memory_dump->children->content;
 	return value;
+}
+
+inline void error_incorrect_value(char *line)
+{
+	const char *err_msg = "Error - incorrect value \"%s\"";
+	char *err = (char*)malloc((strlen(err_msg) + strlen(line) + 1) * sizeof(char));
+	MALLOC_NULL_CHECK(err);
+	sprintf(err, err_msg, line);
+	progstop(err, 1);
 }
 
 int32_t detect_mnemonic(char *line)
@@ -220,6 +242,8 @@ int32_t detect_mnemonic(char *line)
 		return 0; // NOP
 	}
 	
+	if (line[0] != 0 && line[0] != 1 && strlen(line) < 2) error_incorrect_value(line);
+	
 	uint8_t value;
 	
 	switch (line[0])
@@ -227,28 +251,10 @@ int32_t detect_mnemonic(char *line)
 		case '#':
 		{
 			// Check string length
-			if (strlen(line) < 2 || 3 < strlen(line))
-			{
-				char *err = (char*)malloc(300 * sizeof(char));
-				sprintf(err, "ERROR - incorrect value %s", line);
-				progstop(err, 1);
-				return 0;
-			}
+			if (strlen(line) < 2 || 3 < strlen(line)) error_incorrect_value(line);
 			
 			// Check symbols range
-			for (unsigned i = 1; i < strlen(line); ++i)
-			{
-				if (
-					!('0' <= line[i] && line[i] <= '9') &&
-					!('a' <= line[i] && line[i] <= 'f')
-				)
-				{
-					char *err = (char*)malloc(300 * sizeof(char));
-					sprintf(err, "ERROR - incorrect value %s", line);
-					progstop(err, 1);
-					return 0;
-				}
-			}
+			if (!is_uhex_num(line+1)) error_incorrect_value(line);
 			
 			char *strvalue = &line[1];
 			value = (uint8_t) strtoul(strvalue, NULL, 16);
@@ -258,25 +264,10 @@ int32_t detect_mnemonic(char *line)
 		case '*':
 		{
 			// Check string length
-			if (strlen(line) < 2 || 4 < strlen(line))
-			{
-				char *err = (char*)malloc(300 * sizeof(char));
-				sprintf(err, "ERROR - incorrect value %s", line);
-				progstop(err, 1);
-				return 0;
-			}
+			if (strlen(line) < 2 || 4 < strlen(line)) error_incorrect_value(line);
 			
 			// Check symbols range
-			for (unsigned i = 1; i < strlen(line); ++i)
-			{
-				if (line[i] < '0' || '9' < line[i])
-				{
-					char *err = (char*)malloc(300 * sizeof(char));
-					sprintf(err, "ERROR - incorrect value %s", line);
-					progstop(err, 1);
-					return 0;
-				}
-			}
+			if (!is_udec_num(line+1)) error_incorrect_value(line);
 			
 			char *strvalue = &line[1];
 			value = (uint8_t) strtoul(strvalue, NULL, 10);
@@ -286,26 +277,8 @@ int32_t detect_mnemonic(char *line)
 		case '0': {} // Go down
 		case '1':
 		{
-			// Check string length
-			if (strlen(line) < 1 || 8 < strlen(line))
-			{
-				char *err = (char*)malloc(300 * sizeof(char));
-				sprintf(err, "ERROR - incorrect value %s", line);
-				progstop(err, 1);
-				return 0;
-			}
-			
-			// Check symbols range
-			for (unsigned i = 0; i < strlen(line); ++i)
-			{
-				if (line[i] != '0' && line[i] != '1')
-				{
-					char *err = (char*)malloc(300 * sizeof(char));
-					sprintf(err, "ERROR - incorrect value %s", line);
-					progstop(err, 1);
-					return 0;
-				}
-			}
+			// Check string length and symbols range
+			if (strlen(line) < 1 || 8 < strlen(line) || !is_ubin_num(line)) error_incorrect_value(line);
 			
 			value = (uint8_t) strtoul(line, NULL, 2);
 			break;
@@ -347,17 +320,25 @@ void lowercase(char *line)
 
 void setup_mnemonics_alphabet(void)
 {
-	char *filename = (char*)malloc((strlen(extvar->location) + 15 + 10 + 1) * sizeof(char));
-	strcpy(filename, extvar->location);
-	strcat(filename, "resources/mnemonics.json");
+	/*
+	 * Allocate:
+	 * length of path to binary + 
+	 * length of resource name
+	 */
+	const char *resource_name_str = "resources/mnemonics.json";
+	char *filename = (char*)malloc((strlen(extvar->CWD) + strlen(resource_name_str) + 1) * sizeof(char));
+	MALLOC_NULL_CHECK(filename);
+	sprintf(filename, "%s%s", extvar->CWD, resource_name_str);
 	
 	json_error_t error;
 	mnemo = json_load_file(filename, 0, &error);
 	
 	if (mnemo == NULL) 
 	{
-		char *err = (char*)malloc(100 * sizeof(char));
-		sprintf(err, "Error opening mnemonics config file \"%s\"", filename);
+		const char *err_msg = "Error opening mnemonics config file \"%s\"";
+		char *err = (char*)malloc((strlen(err_msg) + strlen(filename) + 1) * sizeof(char));
+		MALLOC_NULL_CHECK(err);
+		sprintf(err, err_msg, filename);
 		progstop(err, 1);
 	}
 }

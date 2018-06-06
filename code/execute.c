@@ -11,6 +11,7 @@
 #include "headers/memory.h"
 #include "headers/error.h"
 #include "headers/file.h"
+#include "headers/mnemonic.h"
 #include "instructions.c"
 
 #define PROG_START 0
@@ -35,10 +36,7 @@ int execute(struct Memory *mem)
 		
 		if (mem->PM_str[mem->PC] == NULL)
 		{
-			if (extvar->debug && extvar->verbose)
-			{
-				printf("Program ended at 0x%04x\n", (unsigned int)mem->PC);
-			}
+			if (extvar->debug && extvar->verbose) printf("Program ended at 0x%04x\n", (unsigned int)mem->PC);
 			break;
 		}
 		
@@ -54,8 +52,11 @@ int execute(struct Memory *mem)
 		if (current_instruction.i) current_instruction.i(mem);
 		else 
 		{
-			char *err = (char*)malloc(300 * sizeof(char));
-			sprintf(err, "Unknown instruction \"%s\" (OPCODE 0x%02x) at address 0x%04x", mem->PM_str[mem->PC], (unsigned int)mem->PM.EPM[mem->PC], (unsigned int)mem->PC);
+			const char *err_msg = "Unknown instruction \"%s\" (OPCODE 0x%02x) at address 0x%04x";
+			// ALLOCATE length of error message + mnemonic length + opcode + PC + 1
+			char *err = (char*)malloc((strlen(err_msg) + strlen(mem->PM_str[mem->PC]) + 2 + 4 + 1) * sizeof(char));
+			MALLOC_NULL_CHECK(err);
+			sprintf(err, err_msg, mem->PM_str[mem->PC], (unsigned int)mem->PM.EPM[mem->PC], (unsigned int)mem->PC);
 			progerr(err);
 			return 1;
 		}
@@ -65,7 +66,12 @@ int execute(struct Memory *mem)
 			if (mem->PC < RPM_SIZE && extvar->breakpoints[mem->PC] == -1) breakpoint(mem);
 			if (mem->PC < RPM_SIZE && extvar->savepoints[mem->PC] == -1) snapshot(mem);
 			
-			usleep(1000 * extvar->clk * current_instruction.n_ticks);
+			struct timespec reqtime;
+			reqtime.tv_sec = 0;
+			reqtime.tv_nsec = extvar->clk * current_instruction.n_ticks * 1000000;
+			nanosleep(&reqtime, NULL);
+			
+			//nanosleep(1000000 * extvar->clk * current_instruction.n_ticks);
 		}
 		
 		++mem->PC;
@@ -86,14 +92,33 @@ void breakpoint(struct Memory *mem)
 
 void snapshot(struct Memory *mem)
 {
+	// Snapshot counter
+	static unsigned int snapshot_counter = 0;
+	
 	time_t timer;
-	char *buffer = (char*)malloc((26 + strlen(extvar->output_file_name) + 1) * sizeof(char));
+	// ALLOCATE
+	//    CWD length +
+	//    leng
+	//    26 characters in date + 
+	//    11 characters in file number + 
+	//    filename length + 
+	//    1
+	char *buffer = (char*)malloc((26 + 11 + strlen(extvar->output_file_name) + 1) * sizeof(char));
+	MALLOC_NULL_CHECK(buffer);
+	
+	// Max 26 characters in date
+	char timebuffer[26];
 	struct tm *tm_info;
 	time(&timer);
 	tm_info = localtime(&timer);
-	strftime(buffer, sizeof(buffer)/sizeof(char), "%Y_%m_%d__%H_%M_%S__", tm_info);
-	strcat(buffer, extvar->output_file_name);
+	strftime(timebuffer, sizeof(timebuffer)/sizeof(char), "__%Y_%m_%d__%H_%M_%S__", tm_info);
+	
+	sprintf(buffer, "%d%s%s", snapshot_counter, timebuffer, extvar->output_file_name);
 	memory_to_file(mem, buffer);
+	
+	free(buffer);
+	
+	++snapshot_counter;
 }
 
 void snapshot_end(struct Memory *mem)
@@ -110,7 +135,7 @@ void memory_to_file(struct Memory *mem, char *filename)
 	char* data    = extvar->EDM_active ? memory_to_str(mem->DM.EDM, EDM_SIZE) : memory_to_str(mem->DM.RDM, RDM_SIZE);
 	
 	json_object_set_new(root, "program", json_string(program));
-	json_object_set_new( root, "data", json_string(data));
+	json_object_set_new(root, "data", json_string(data));
 	char *result = json_dumps(root, 0);
 	write_text_file(filename, result);
 	free(result);
@@ -119,18 +144,27 @@ void memory_to_file(struct Memory *mem, char *filename)
 
 char *memory_to_str(uint8_t *storage, size_t size)
 {
-	char *current_str = (char*)malloc(size * 10 * sizeof(uint8_t) + 1);
+	// Decrease size
+	while (size > 0 && storage[size-1] == 0) --size;
+	
+	// ALLOCATE memory for memory dump string + comments
+	// 4 - reserve
+	// 14 - max autocomment size
+	char *current_str = (char*)malloc((size*(MAX_MNEMONIC_LENGTH + 4) + (size/8*14) + 1) * sizeof(char));
+	MALLOC_NULL_CHECK(current_str);
 	current_str[0] = '\0';
 	
 	for (size_t i = 0; i < size; ++i)
 	{
 		char *strhex = (char*)malloc(4 * sizeof(char));
+		MALLOC_NULL_CHECK(strhex);
 		if (i % 8 == 0)
 		{
-			char *strcomment = (char*)malloc(40 * sizeof(char));
+			char *strcomment = (char*)malloc(14 * sizeof(char));
+			MALLOC_NULL_CHECK(strcomment);
 			strcomment[0] = '\'';
 			strcomment[1] = '\0';
-			sprintf(strhex, "addr %02x", (unsigned int)i);
+			sprintf(strhex, "addr %04x", (unsigned int)i);
 			strcat(strcomment, strhex);
 			strcat(strcomment, "' ");
 			strcat(current_str, strcomment);

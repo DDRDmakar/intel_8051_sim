@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <stdlib.h>
 
 #include "headers/memory.h"
@@ -19,6 +20,7 @@ void show_help(void)
 {
 	char* helpmessage = read_text_file("resources/help.txt");
 	printf("%s", helpmessage);
+	free(helpmessage);
 }
 
 int main(int argc, char** argv)
@@ -28,11 +30,11 @@ int main(int argc, char** argv)
 	setup_extvar();
 	
 	// Executable location
-	extvar->location = (char*)malloc(strlen(argv[0]) * sizeof(char));
-	strcpy(extvar->location, argv[0]);
-	char *lastslash = strrchr(extvar->location, '/');
-	if (lastslash) { if (strlen(lastslash) > 1) lastslash[1] = '\0'; }
-	else extvar->location[0] = 0;
+	// ALLOCATE length of CWD path. (max path length is 2048)
+	extvar->CWD = (char*)malloc((2048 + strlen(argv[0])) * sizeof(char));
+	MALLOC_NULL_CHECK(extvar->CWD);
+	extvar->CWD = getcwd(extvar->CWD, 2048 * sizeof(char));
+	strcat(extvar->CWD, "/");
 	
 	// Parse args
 	for (int i = 1; i < argc; ++i)
@@ -140,8 +142,10 @@ int main(int argc, char** argv)
 					
 					default:
 					{
-						char *err = (char*)malloc(300 * sizeof(char));
-						sprintf(err, "Unknown flag %s", argv[i]);
+						const char *err_msg = "Unknown flag %s";
+						char *err = (char*)malloc((strlen(err_msg) + strlen(argv[i]) + 1) * sizeof(char));
+						MALLOC_NULL_CHECK(err);
+						sprintf(err, err_msg, argv[i]);
 						progstop(err, 1);
 					}
 				}
@@ -153,16 +157,17 @@ int main(int argc, char** argv)
 	if (extvar->output_file_name == NULL) extvar->output_file_name = "memory.json";
 	if (extvar->input_file_name == NULL) progstop("Error - input file name is not set." ,1);;
 	
-	/*
+#ifdef _DEBUGINFO_
 	printf("STRUCTURE OF EXTVAR:\n\tEPM\t%d\n\tEDM\t%d\n\tclk\t%d\n\tdebug\t%d\n\tmode\t%d\n\tverbose\t%d\n\tproduce_file\t%d\n\tlocation\t%s\n\toutput file name\t%s\n\tinput file name\t%s\n",
 		extvar->EPM_active, extvar->EDM_active, extvar->clk, extvar->debug, extvar->mode, extvar->verbose, extvar->produce_file, extvar->location, extvar->output_file_name, extvar->input_file_name
 	);
-	*/
+#endif
 	
 	struct Memory m;
 	m.PC = 0;
 	
-	/* MEMORY TEST
+#ifdef _DEBUGINFO_
+	// MEMORY TEST
 	for (uint16_t i = 0; i < 256; ++i) {m.DM.EDM[i] = i;}
 	//m.DM.RDM.ACC = 36;
 	// E0 = 224
@@ -183,7 +188,7 @@ int main(int argc, char** argv)
 	
 	printf("#F0 = %d	", m.DM.EDM[0xF0]);
 	printf("B = %d\n", m.DM.RDM_REG.B);
-	*/
+#endif
 	
 	setup_mnemonics_alphabet();
 	setup_memory(&m);
@@ -215,6 +220,6 @@ void free_extvar(void)
 {
 	free(extvar->breakpoints);
 	free(extvar->savepoints);
-	free(extvar->location);
+	free(extvar->CWD);
 	free(extvar);
 }
