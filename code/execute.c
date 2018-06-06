@@ -54,9 +54,10 @@ int execute(struct Memory *mem)
 		{
 			const char *err_msg = "Unknown instruction \"%s\" (OPCODE 0x%02x) at address 0x%04x";
 			// ALLOCATE length of error message + mnemonic length + opcode + PC + 1
-			char *err = (char*)malloc((strlen(err_msg) + strlen(mem->PM_str[mem->PC]) + 2 + 4 + 1) * sizeof(char));
+			size_t errlen = strlen(err_msg) + strlen(mem->PM_str[mem->PC]) + 2 + 4 + 1;
+			char *err = (char*)malloc(errlen * sizeof(char));
 			MALLOC_NULL_CHECK(err);
-			sprintf(err, err_msg, mem->PM_str[mem->PC], (unsigned int)mem->PM.EPM[mem->PC], (unsigned int)mem->PC);
+			snprintf(err, errlen, err_msg, mem->PM_str[mem->PC], (unsigned int)mem->PM.EPM[mem->PC], (unsigned int)mem->PC);
 			progerr(err);
 			return 1;
 		}
@@ -103,7 +104,8 @@ void snapshot(struct Memory *mem)
 	//    11 characters in file number + 
 	//    filename length + 
 	//    1
-	char *buffer = (char*)malloc((26 + 11 + strlen(extvar->output_file_name) + 1) * sizeof(char));
+	size_t buffer_len = 26 + 11 + strlen(extvar->output_file_name) + 1;
+	char *buffer = (char*)malloc(buffer_len * sizeof(char));
 	MALLOC_NULL_CHECK(buffer);
 	
 	// Max 26 characters in date
@@ -113,7 +115,7 @@ void snapshot(struct Memory *mem)
 	tm_info = localtime(&timer);
 	strftime(timebuffer, sizeof(timebuffer)/sizeof(char), "__%Y_%m_%d__%H_%M_%S__", tm_info);
 	
-	sprintf(buffer, "%d%s%s", snapshot_counter, timebuffer, extvar->output_file_name);
+	snprintf(buffer, buffer_len, "%d%s%s", snapshot_counter, timebuffer, extvar->output_file_name);
 	memory_to_file(mem, buffer);
 	
 	free(buffer);
@@ -150,27 +152,32 @@ char *memory_to_str(uint8_t *storage, size_t size)
 	// ALLOCATE memory for memory dump string + comments
 	// 4 - reserve
 	// 14 - max autocomment size
-	char *current_str = (char*)malloc((size*(MAX_MNEMONIC_LENGTH + 4) + (size/8*14) + 1) * sizeof(char));
+	const size_t current_str_len = size*(MAX_MNEMONIC_LENGTH + 4) + (size/8*14) + 1;
+	char *current_str = (char*)malloc(current_str_len * sizeof(char));
 	MALLOC_NULL_CHECK(current_str);
 	current_str[0] = '\0';
 	
 	for (size_t i = 0; i < size; ++i)
 	{
-		char *strhex = (char*)malloc(4 * sizeof(char));
+		// Max 4 characters in hex value + one space
+		char *strhex = (char*)malloc(5 * sizeof(char));
 		MALLOC_NULL_CHECK(strhex);
 		if (i % 8 == 0)
 		{
-			char *strcomment = (char*)malloc(14 * sizeof(char));
-			MALLOC_NULL_CHECK(strcomment);
-			strcomment[0] = '\'';
-			strcomment[1] = '\0';
-			sprintf(strhex, "addr %04x", (unsigned int)i);
-			strcat(strcomment, strhex);
-			strcat(strcomment, "' ");
+			// max comment length is 14
+			const size_t comment_len = 14;
+			char strcomment[comment_len];
+			snprintf(strcomment, comment_len, "\'addr %04x\' ", (unsigned int)i);
 			strcat(current_str, strcomment);
 		}
-		sprintf(strhex, "#%02x ", storage[i]);
-		strcat(current_str, strhex);
+		
+		if (storage[i])
+		{
+			// 2 chars in opcode + one space
+			snprintf(strhex, 5, "#%02x ", storage[i]);
+			strcat(current_str, strhex);
+		}
+		else strcat(current_str, "0 ");
 	}
 	return current_str;
 }

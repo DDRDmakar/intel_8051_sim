@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "headers/file.h"
 #include "headers/error.h"
@@ -39,9 +40,10 @@ char* read_text_file(const char *filename)
 char* read_text_file_resources(const char *filename)
 {
 	char *str_resources = "resources/";
-	char *newfilename = (char*)malloc((strlen(extvar->CWD) + strlen(str_resources) + strlen(filename) + 1) * sizeof(char));
+	const size_t namelen = strlen(extvar->CWD) + strlen(str_resources) + strlen(filename) + 1;
+	char *newfilename = (char*)malloc(namelen * sizeof(char));
 	MALLOC_NULL_CHECK(newfilename);
-	sprintf(newfilename, "%s%s%s", extvar->CWD, str_resources, filename);
+	snprintf(newfilename, namelen, "%s%s%s", extvar->CWD, str_resources, filename);
 	return read_text_file(newfilename);
 }
 
@@ -56,8 +58,9 @@ void write_text_file(const char *filename, const char *str)
 void write_text_file_resources(const char *filename, const char *str)
 {
 	char *str_resources = "resources/";
-	char *newfilename = (char*)malloc((strlen(extvar->CWD) + strlen(str_resources) + strlen(filename) + 1) * sizeof(char));
+	const size_t namelen = strlen(extvar->CWD) + strlen(str_resources) + strlen(filename) + 1;
+	char *newfilename = (char*)malloc(namelen * sizeof(char));
 	MALLOC_NULL_CHECK(newfilename);
-	sprintf(newfilename, "%s%s%s", extvar->CWD, str_resources, filename);
+	snprintf(newfilename, namelen, "%s%s%s", extvar->CWD, str_resources, filename);
 	write_text_file(newfilename, str);
 }

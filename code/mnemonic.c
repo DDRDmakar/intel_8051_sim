@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #include "headers/mnemonic.h"
 #include "headers/file.h"
@@ -24,9 +25,10 @@ void setup_memory(struct Memory *mem)
 	if (str_state == NULL)
 	{
 		const char *err_msg = "Error opening memory file \"%s\"";
-		char *err = (char*)malloc((strlen(err_msg) + strlen(extvar->input_file_name) + 1) * sizeof(char));
+		const size_t errlen = strlen(err_msg) + strlen(extvar->input_file_name) + 1;
+		char *err = (char*)malloc(errlen * sizeof(char));
 		MALLOC_NULL_CHECK(err);
-		sprintf(err, err_msg, extvar->input_file_name);
+		snprintf(err, errlen, err_msg, extvar->input_file_name);
 		progstop(err, 1);
 	}
 	
@@ -38,9 +40,10 @@ void setup_memory(struct Memory *mem)
 	if (root == NULL)
 	{
 		const char *err_msg = "Error parsing memory file \"%s\"";
-		char *err = (char*)malloc((strlen(err_msg) + strlen(extvar->input_file_name) + 1) * sizeof(char));
+		const size_t errlen = strlen(err_msg) + strlen(extvar->input_file_name) + 1;
+		char *err = (char*)malloc(errlen * sizeof(char));
 		MALLOC_NULL_CHECK(err);
-		sprintf(err, err_msg, extvar->input_file_name);
+		snprintf(err, errlen, err_msg, extvar->input_file_name);
 		progstop(err, 1);
 	}
 	
@@ -94,9 +97,10 @@ void fill_memory(uint8_t storage[], char ***storage_str, const char *line, const
 		{
 			// 11 characters in memory size
 			const char *err_msg = "Error - memory dump size is bigger than available memort (%d bytes)";
-			char *err = (char*)malloc((strlen(err_msg) + 11 + 1) * sizeof(char));
+			const size_t errlen = strlen(err_msg) + 11 + 1;
+			char *err = (char*)malloc(errlen * sizeof(char));
 			MALLOC_NULL_CHECK(err);
-			sprintf(err, err_msg, memory_size);
+			snprintf(err, errlen, err_msg, memory_size);
 			progstop(err, 1);
 		}
 		
@@ -197,9 +201,10 @@ int push_mnemonic(uint8_t storage[], const unsigned int addr, char *line)
 			{
 				const char *err_msg = "ERROR - incorrect mnemonic value %d";
 				// 11 charachers for address
-				char *err = (char*)malloc((strlen(err_msg) + 11 + 1) * sizeof(char));
+				const size_t errlen = strlen(err_msg) + 11 + 1;
+				char *err = (char*)malloc(errlen * sizeof(char));
 				MALLOC_NULL_CHECK(err);
-				sprintf(err, err_msg, value);
+				snprintf(err, errlen, err_msg, value);
 				progstop(err, 1);
 			}
 		}
@@ -215,9 +220,10 @@ uint8_t get_mnemonic_from_file(char *name)
 	if (current_mnemonic == NULL || !json_is_integer(current_mnemonic))
 	{
 		const char *err_msg = "Error - mnemonic \"%s\" not found";
-		char *err = (char*)malloc((strlen(err_msg) + strlen(name) + 1) * sizeof(char));
+		const size_t errlen = strlen(err_msg) + strlen(name) + 1;
+		char *err = (char*)malloc(errlen * sizeof(char));
 		MALLOC_NULL_CHECK(err);
-		sprintf(err, err_msg, name);
+		snprintf(err, errlen, err_msg, name);
 		progstop(err, 1);
 	}
 	
@@ -229,9 +235,10 @@ uint8_t get_mnemonic_from_file(char *name)
 inline void error_incorrect_value(char *line)
 {
 	const char *err_msg = "Error - incorrect value \"%s\"";
-	char *err = (char*)malloc((strlen(err_msg) + strlen(line) + 1) * sizeof(char));
+	const size_t errlen = strlen(err_msg) + strlen(line) + 1;
+	char *err = (char*)malloc(errlen * sizeof(char));
 	MALLOC_NULL_CHECK(err);
-	sprintf(err, err_msg, line);
+	snprintf(err, errlen, err_msg, line);
 	progstop(err, 1);
 }
 
@@ -326,9 +333,10 @@ void setup_mnemonics_alphabet(void)
 	 * length of resource name
 	 */
 	const char *resource_name_str = "resources/mnemonics.json";
-	char *filename = (char*)malloc((strlen(extvar->CWD) + strlen(resource_name_str) + 1) * sizeof(char));
+	const size_t filename_len = strlen(extvar->CWD) + strlen(resource_name_str) + 1;
+	char *filename = (char*)malloc(filename_len * sizeof(char));
 	MALLOC_NULL_CHECK(filename);
-	sprintf(filename, "%s%s", extvar->CWD, resource_name_str);
+	snprintf(filename, filename_len, "%s%s", extvar->CWD, resource_name_str);
 	
 	json_error_t error;
 	mnemo = json_load_file(filename, 0, &error);
@@ -336,9 +344,10 @@ void setup_mnemonics_alphabet(void)
 	if (mnemo == NULL) 
 	{
 		const char *err_msg = "Error opening mnemonics config file \"%s\"";
-		char *err = (char*)malloc((strlen(err_msg) + strlen(filename) + 1) * sizeof(char));
+		const size_t errlen = strlen(err_msg) + strlen(filename) + 1;
+		char *err = (char*)malloc(errlen * sizeof(char));
 		MALLOC_NULL_CHECK(err);
-		sprintf(err, err_msg, filename);
+		snprintf(err, errlen, err_msg, filename);
 		progstop(err, 1);
 	}
 }

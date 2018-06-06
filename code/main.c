@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #include "headers/memory.h"
 #include "headers/mnemonic.h"
@@ -143,9 +144,10 @@ int main(int argc, char** argv)
 					default:
 					{
 						const char *err_msg = "Unknown flag %s";
-						char *err = (char*)malloc((strlen(err_msg) + strlen(argv[i]) + 1) * sizeof(char));
+						size_t errlen = strlen(err_msg) + strlen(argv[i]) + 1;
+						char *err = (char*)malloc(errlen * sizeof(char));
 						MALLOC_NULL_CHECK(err);
-						sprintf(err, err_msg, argv[i]);
+						snprintf(err, errlen, err_msg, argv[i]);
 						progstop(err, 1);
 					}
 				}
