@@ -16,13 +16,13 @@
 
 #define PROG_START 0
 
-void breakpoint(struct Memory *mem);
-void snapshot(struct Memory *mem);
-void snapshot_end(struct Memory *mem);
-void memory_to_file(struct Memory *mem, char *filename);
+void breakpoint(Memory *mem);
+void snapshot(Memory *mem);
+void snapshot_end(Memory *mem);
+void memory_to_file(Memory *mem, char *filename);
 char *memory_to_str(uint8_t *storage, size_t size);
 
-int execute(struct Memory *mem)
+int execute(Memory *mem)
 {
 	//uint8_t *prog_memory = extvar->EPM_active ? mem->PM.EPM : mem->PM.RPM;
 	size_t prog_memory_size = extvar->EPM_active ? EPM_SIZE : RPM_SIZE;
@@ -48,7 +48,7 @@ int execute(struct Memory *mem)
 			if (mem->PC < RPM_SIZE && extvar->savepoints[mem->PC] == 1) snapshot(mem);
 		}
 		
-		struct Instruction_storage current_instruction = instr[mem->PM.RPM[mem->PC]];
+		Instruction_storage current_instruction = instr[mem->PM.RPM[mem->PC]];
 		if (current_instruction.i) current_instruction.i(mem);
 		else 
 		{
@@ -83,7 +83,7 @@ int execute(struct Memory *mem)
 	return 0;
 }
 
-void breakpoint(struct Memory *mem)
+void breakpoint(Memory *mem)
 {
 	(void)mem;
 	printf("========> BREAKPOINT. Press Enter to continue");
@@ -91,7 +91,7 @@ void breakpoint(struct Memory *mem)
 	while (enter != '\r' && enter != '\n') { enter = getchar(); }
 }
 
-void snapshot(struct Memory *mem)
+void snapshot(Memory *mem)
 {
 	// Snapshot counter
 	static unsigned int snapshot_counter = 0;
@@ -123,12 +123,12 @@ void snapshot(struct Memory *mem)
 	++snapshot_counter;
 }
 
-void snapshot_end(struct Memory *mem)
+void snapshot_end(Memory *mem)
 {
 	memory_to_file(mem, extvar->output_file_name);
 }
 
-void memory_to_file(struct Memory *mem, char *filename)
+void memory_to_file(Memory *mem, char *filename)
 {
 	json_t *root = json_object();
 	//json_t *program = json_array();

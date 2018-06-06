@@ -4,6 +4,6 @@
 
 #include "memory.h"
 
-int execute(struct Memory *mem);
+int execute(Memory *mem);
 
 #endif

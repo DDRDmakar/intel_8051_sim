@@ -18,7 +18,7 @@ uint8_t get_mnemonic_from_file(char *name);
 int32_t detect_mnemonic(char *line);
 
 
-void setup_memory(struct Memory *mem)
+void setup_memory(Memory *mem)
 {
 	// Get JSON object of memory
 	char *str_state = read_text_file(extvar->input_file_name);

@@ -2,9 +2,7 @@
 #ifndef __EXTVAR__
 #define __EXTVAR__
 
-#include "memory.h"
-
-struct Extvar
+typedef struct Extvar
 {
 	unsigned int
 		EPM_active, 
@@ -22,8 +20,8 @@ struct Extvar
 	int 
 		*breakpoints,  // 0 - nothing; -1 - before; 1 - after
 		*savepoints;   // 0 - nothing; -1 - before; 1 - after
-};
+} Extvar;
 
-extern struct Extvar *extvar;
+extern Extvar *extvar;
 
 #endif

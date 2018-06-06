@@ -235,15 +235,15 @@ I(nop) { (void)mem; }
 
 // INSTRUCTIONS ARRAY
 
-struct Instruction_storage
+typedef struct Instruction_storage
 {
 	void (*i)(struct Memory*);
 	unsigned int n_bytes;
 	unsigned int n_ticks;
 	char *str_mnemonic;
-};
+} Instruction_storage;
 
-struct Instruction_storage instr[256] = 
+Instruction_storage instr[256] = 
 {
 	// instruction n_bytes n_ticks
 	

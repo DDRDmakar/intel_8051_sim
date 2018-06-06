@@ -6,7 +6,7 @@
 
 #include "memory.h"
 
-void setup_memory(struct Memory *mem);
+void setup_memory(Memory *mem);
 void lowercase(char *line);
 void setup_mnemonics_alphabet(void);
 void free_mnemonics_alphabet(void);

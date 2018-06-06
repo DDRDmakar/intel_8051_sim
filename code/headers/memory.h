@@ -11,7 +11,7 @@
 
 // TODO bit addressing features (page 19)
 
-struct Memory
+typedef struct Memory
 {
 	union Data_memory
 	{
@@ -109,6 +109,6 @@ struct Memory
 	char **PM_str;
 	
 	size_t PC;
-};
+} Memory; // Defined type
 
 #endif

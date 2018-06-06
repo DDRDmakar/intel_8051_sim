@@ -15,7 +15,7 @@
 void setup_extvar(void);
 void free_extvar(void);
 
-struct Extvar *extvar;
+Extvar *extvar;
 
 void show_help(void) 
 {
@@ -165,7 +165,7 @@ int main(int argc, char** argv)
 	);
 #endif
 	
-	struct Memory m;
+	Memory m;
 	m.PC = 0;
 	
 #ifdef _DEBUGINFO_
@@ -206,7 +206,7 @@ int main(int argc, char** argv)
 
 void setup_extvar(void)
 {
-	extvar = (struct Extvar*)malloc(sizeof(struct Extvar));
+	extvar = (Extvar*)malloc(sizeof(Extvar));
 	extvar->EDM_active = 0;
 	extvar->EPM_active = 0;
 	extvar->input_file_name = NULL;
