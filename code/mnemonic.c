@@ -11,7 +11,7 @@
 json_t *mnemo;
 
 
-void fill_memory(uint8_t storage[], char ***storage_str, const char *line, const unsigned int memory_size);
+void fill_memory(uint8_t *storage, char ***storage_str, const char *line, const unsigned int memory_size);
 void push_word(char **storage, const unsigned int addr, char *line);
 int push_mnemonic(uint8_t storage[], const unsigned int addr, char *line);
 uint8_t get_mnemonic_from_file(char *name);
@@ -34,7 +34,7 @@ void setup_memory(Memory *mem)
 	
 	size_t l = strlen(str_state); // Replace newlines with spaces (to make json correct)
 	for(size_t i = 0; i < l; ++i) if (str_state[i] == '\n' || str_state[i] == '\t') str_state[i] = ' ';
-	lowercase(str_state);
+	
 	json_error_t error;
 	json_t *root = json_loads(str_state, 0, &error);
 	if (root == NULL)
@@ -76,7 +76,7 @@ void setup_memory(Memory *mem)
 	free(root);
 }
 
-void fill_memory(uint8_t storage[], char ***storage_str, const char *line, const unsigned int memory_size)
+void fill_memory(uint8_t *storage, char ***storage_str, const char *line, const unsigned int memory_size)
 //void parse_words(char ***storage, const char *line, const unsigned int memory_size)
 {
 	const unsigned int len = strlen(line);
@@ -87,7 +87,7 @@ void fill_memory(uint8_t storage[], char ***storage_str, const char *line, const
 	unsigned part_pointer = 0; // "part" array length
 	char quote = 0; // If current part of text is commented
 	
-	// Allocate memory for storage
+	// Allocate memory for storage of mnemonics
 	*storage_str = (char**)malloc(memory_size * sizeof(char*));
 	MALLOC_NULL_CHECK(storage_str);
 	
@@ -216,14 +216,19 @@ uint8_t get_mnemonic_from_file(char *name)
 {
 	if (mnemo == NULL) progstop("Error - mnemonics alphabet config was not set set up", 1);
 	
-	json_t *current_mnemonic = json_object_get(mnemo, name);
+	char *name_copy = (char*)malloc((strlen(name) + 1) * sizeof(char));
+	MALLOC_NULL_CHECK(name_copy);
+	strcpy(name_copy, name);
+	lowercase(name_copy);
+	
+	json_t *current_mnemonic = json_object_get(mnemo, name_copy);
 	if (current_mnemonic == NULL || !json_is_integer(current_mnemonic))
 	{
 		const char *err_msg = "Error - mnemonic \"%s\" not found";
-		const size_t errlen = strlen(err_msg) + strlen(name) + 1;
+		const size_t errlen = strlen(err_msg) + strlen(name_copy) + 1;
 		char *err = (char*)malloc(errlen * sizeof(char));
 		MALLOC_NULL_CHECK(err);
-		snprintf(err, errlen, err_msg, name);
+		snprintf(err, errlen, err_msg, name_copy);
 		progstop(err, 1);
 	}
 	
@@ -232,7 +237,7 @@ uint8_t get_mnemonic_from_file(char *name)
 	return value;
 }
 
-inline void error_incorrect_value(char *line)
+void error_incorrect_value(char *line)
 {
 	const char *err_msg = "Error - incorrect value \"%s\"";
 	const size_t errlen = strlen(err_msg) + strlen(line) + 1;
@@ -350,6 +355,8 @@ void setup_mnemonics_alphabet(void)
 		snprintf(err, errlen, err_msg, filename);
 		progstop(err, 1);
 	}
+	
+	free(filename);
 }
 
 void free_mnemonics_alphabet(void)

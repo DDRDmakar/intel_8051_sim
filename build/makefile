@@ -12,10 +12,10 @@ endif
 prog: main.o mnemonic.o file.o error.o execute.o tools.o
 	$(CC) $(CFLAGS) -o $(BIN_NAME) main.o mnemonic.o file.o error.o execute.o tools.o
 
-main.o: $(DIR)main.c $(DIR)headers/memory.h $(DIR)headers/mnemonic.h $(DIR)headers/extvar.h $(DIR)headers/tools.h $(DIR)headers/file.h
+main.o: $(DIR)main.c $(DIR)headers/memory.h $(DIR)headers/mnemonic.h $(DIR)headers/extvar.h $(DIR)headers/error.h $(DIR)headers/tools.h $(DIR)headers/file.h $(DIR)headers/execute.h
 	$(CC) $(CFLAGS) -c $(DIR)main.c
 
-mnemonic.o: $(DIR)mnemonic.c $(DIR)headers/mnemonic.h $(DIR)headers/memory.h $(DIR)headers/file.h $(DIR)headers/error.h
+mnemonic.o: $(DIR)mnemonic.c $(DIR)headers/mnemonic.h $(DIR)headers/file.h $(DIR)headers/error.h $(DIR)headers/extvar.h $(DIR)headers/tools.h
 	$(CC) $(CFLAGS) -c $(DIR)mnemonic.c
 
 file.o: $(DIR)file.c $(DIR)headers/file.h $(DIR)headers/error.h $(DIR)headers/extvar.h
@@ -24,7 +24,7 @@ file.o: $(DIR)file.c $(DIR)headers/file.h $(DIR)headers/error.h $(DIR)headers/ex
 error.o: $(DIR)error.c $(DIR)headers/error.h
 	$(CC) $(CFLAGS) -c $(DIR)error.c
 
-execute.o: $(DIR)execute.c $(DIR)headers/execute.h $(DIR)instructions.c $(DIR)headers/extvar.h $(DIR)headers/memory.h $(DIR)headers/error.h
+execute.o: $(DIR)execute.c $(DIR)headers/execute.h $(DIR)instructions.c $(DIR)headers/extvar.h $(DIR)headers/memory.h $(DIR)headers/error.h $(DIR)headers/file.h $(DIR)headers/mnemonic.h
 	$(CC) $(CFLAGS) -D _POSIX_C_SOURCE=200809L -c $(DIR)execute.c
 
 tools.o: $(DIR)tools.c $(DIR)headers/tools.h

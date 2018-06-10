@@ -30,6 +30,8 @@ DPTR – регистр указатель данных;
 ( ) – содержимое ячейки памяти или регистра.
  */
 
+// Аккумулятор
+#define ACCUM FUNREGS.ACC
 // Специальные регистры
 #define FUNREGS mem->DM.RDM_REG
 // Резидентная память программы
@@ -45,14 +47,14 @@ DPTR – регистр указатель данных;
 // Текущий банк регистров
 #define REGBANK mem->DM.bank_POH[(FUNREGS.PSW.PSW & 0x18) >> 3]
 // Последние 3 бита инструкции
-#define LAST_3(x) x & 0x07
+#define LAST_3 INSTR(0) & 0x07
 // Последний 1 бит инструкции
-#define LAST_1(x) x & 0x01
+#define LAST_1 INSTR(0) & 0x01
 
 // Байт в текущем банке регистров, выбранный инструкцией (от 0 до 7)
-#define Rn REGBANK[LAST_3(INSTR(0))]
+#define Rn REGBANK[LAST_3]
 // Байт в текущем банке регистров, выбранный инструкцией (от 0 до 1)
-#define Ri REGBANK[LAST_1(INSTR(0))]
+#define Ri REGBANK[LAST_1]
 // Ещё один инкремент происходит в вызывающей функции
 
 // Увеличить счётчик инструкций на 1
@@ -66,7 +68,7 @@ DPTR – регистр указатель данных;
 // Объявление функции-инструкции
 #define I(x) void x(struct Memory *mem)
 
-uint8_t is_odd(uint8_t a)
+uint8_t is_odd_nummer_of_bits(uint8_t a)
 {
 	uint8_t answer = 0;
 	while (a)
@@ -81,21 +83,21 @@ uint8_t is_odd(uint8_t a)
 
 // ### Команды передачи данных
 
-I(mov_a_rn) { FUNREGS.ACC = Rn; }
+I(mov_a_rn) { ACCUM = Rn; }
 
-I(mov_a_ad) { FUNREGS.ACC = DATAMEM[INSTR(1)]; IncrPC_1; }
+I(mov_a_ad) { ACCUM = DATAMEM[INSTR(1)]; IncrPC_1; }
 
-I(mov_a_rdm) { FUNREGS.ACC = DATAMEM[Ri]; }
+I(mov_a_rdm) { ACCUM = DATAMEM[Ri]; }
 
-I(mov_a_d) { FUNREGS.ACC = INSTR(1); IncrPC_1; }
+I(mov_a_d) { ACCUM = INSTR(1); IncrPC_1; }
 
-I(mov_rn_a) { Rn = FUNREGS.ACC; }
+I(mov_rn_a) { Rn = ACCUM; }
 
 I(mov_rn_ad) { Rn = DATAMEM[INSTR(1)]; IncrPC_1; }
 
 I(mov_rn_d) { Rn = INSTR(1); IncrPC_1; }
 
-I(mov_ad_a) { DATAMEM[INSTR(1)] = FUNREGS.ACC; IncrPC_1; }
+I(mov_ad_a) { DATAMEM[INSTR(1)] = ACCUM; IncrPC_1; }
 
 I(mov_ad_rn) { Rn = DATAMEM[INSTR(1)]; }
 
@@ -105,7 +107,7 @@ I(mov_ad_rdm) { DATAMEM[INSTR(1)] = DATAMEM[Ri]; IncrPC_1; }
 
 I(mov_ad_d) { DATAMEM[INSTR(1)] = INSTR(2);  IncrPC_2; }
 
-I(mov_rdm_a) { DATAMEM[Ri] = FUNREGS.ACC; }
+I(mov_rdm_a) { DATAMEM[Ri] = ACCUM; }
 
 I(mov_rdm_ad) { DATAMEM[Ri] = DATAMEM[INSTR(1)]; IncrPC_1; }
 
@@ -118,49 +120,48 @@ I(mov_dptr_d16) // Загрузка указателя данных
 	IncrPC_2;
 }
 
-I(movc_a_adptr) { FUNREGS.ACC = E_PROGMEM[FUNREGS.ACC + FUNREGS.DPTR.DPTR]; }
+I(movc_a_adptr) { ACCUM = E_PROGMEM[ACCUM + FUNREGS.DPTR.DPTR]; }
 
-I(movc_a_apc) { IncrPC_1; FUNREGS.ACC = E_PROGMEM[FUNREGS.ACC + mem->PC]; }
+I(movc_a_apc) { IncrPC_1; ACCUM = E_PROGMEM[ACCUM + mem->PC]; }
 
-I(movx_a_edm) { FUNREGS.ACC = E_DATAMEM[Ri]; }
+I(movx_a_edm) { ACCUM = E_DATAMEM[Ri]; }
 
-I(movx_a_dptr) { FUNREGS.ACC = E_DATAMEM[FUNREGS.DPTR.DPTR]; }
+I(movx_a_dptr) { ACCUM = E_DATAMEM[FUNREGS.DPTR.DPTR]; }
 
-I(movx_edm_a) { E_DATAMEM[Ri] = FUNREGS.ACC; }
+I(movx_edm_a) { E_DATAMEM[Ri] = ACCUM; }
 
-I(movx_dptr_a) { E_DATAMEM[FUNREGS.DPTR.DPTR] = FUNREGS.ACC; }
+I(movx_dptr_a) { E_DATAMEM[FUNREGS.DPTR.DPTR] = ACCUM; }
 
-// TODO посмотреть где стек
 I(push_ad) { DATAMEM[++FUNREGS.SP] = DATAMEM[INSTR(1)]; IncrPC_1; }
 
 I(pop_ad) { DATAMEM[INSTR(1)] = DATAMEM[FUNREGS.SP--]; IncrPC_1; }
 
 I(xch_a_rn)
 {
-	uint8_t t = FUNREGS.ACC;
-	FUNREGS.ACC = Rn;
+	uint8_t t = ACCUM;
+	ACCUM = Rn;
 	Rn = t;
 }
 
 I(xch_a_ad)
 {
-	uint8_t t = FUNREGS.ACC;
-	FUNREGS.ACC = DATAMEM[INSTR(1)];
+	uint8_t t = ACCUM;
+	ACCUM = DATAMEM[INSTR(1)];
 	DATAMEM[INSTR(1)] = t;
 	IncrPC_1;
 }
 
 I(xch_a_rdm)
 {
-	uint8_t t = FUNREGS.ACC;
-	FUNREGS.ACC = DATAMEM[Ri];
+	uint8_t t = ACCUM;
+	ACCUM = DATAMEM[Ri];
 	DATAMEM[Ri] = t;
 }
 
 I(xchd_a_rdm)
 {
-	uint8_t t = FUNREGS.ACC & 0x0F;
-	FUNREGS.ACC = DATAMEM[Ri] & 0x0F;
+	uint8_t t = ACCUM & 0x0F;
+	ACCUM = DATAMEM[Ri] & 0x0F;
 	DATAMEM[Ri] = t;
 }
 
@@ -192,20 +193,20 @@ I(xchd_a_rdm)
 
 I(add_a_rn)
 { 
-	PSWBITS.C = ((uint16_t)FUNREGS.ACC + (uint16_t)Rn > 255) ? 1 : 0;
-	PSWBITS.AC = ((FUNREGS.ACC & 0x0F) + (Rn & 0x0F) > 15) ? 1 : 0;
-	PSWBITS.OV = ((FUNREGS.ACC & 0x7F) + (Rn & 0x7F) > 127) ? 1 : 0;
-	FUNREGS.ACC += Rn;
-	PSWBITS.P = is_odd(FUNREGS.ACC);
+	PSWBITS.C = ((uint16_t)ACCUM + (uint16_t)Rn > 255) ? 1 : 0;
+	PSWBITS.AC = ((ACCUM & 0x0F) + (Rn & 0x0F) > 15) ? 1 : 0;
+	PSWBITS.OV = ((ACCUM & 0x7F) + (Rn & 0x7F) > 127) ? 1 : 0;
+	ACCUM += Rn;
+	PSWBITS.P = is_odd_nummer_of_bits(ACCUM);
 }
 
 I(add_a_ad)
 {
-	PSWBITS.C = ((uint16_t)FUNREGS.ACC + (uint16_t)DATAMEM[INSTR(1)] > 255) ? 1 : 0;
-	PSWBITS.AC = ((FUNREGS.ACC & 0x0F) + (DATAMEM[INSTR(1)] & 0x0F) > 15) ? 1 : 0;
-	PSWBITS.OV = ((FUNREGS.ACC & 0x7F) + (DATAMEM[INSTR(1)] & 0x7F) > 127) ? 1 : 0;
-	FUNREGS.ACC += DATAMEM[INSTR(1)];
-	PSWBITS.P = is_odd(FUNREGS.ACC);
+	PSWBITS.C = ((uint16_t)ACCUM + (uint16_t)DATAMEM[INSTR(1)] > 255) ? 1 : 0;
+	PSWBITS.AC = ((ACCUM & 0x0F) + (DATAMEM[INSTR(1)] & 0x0F) > 15) ? 1 : 0;
+	PSWBITS.OV = ((ACCUM & 0x7F) + (DATAMEM[INSTR(1)] & 0x7F) > 127) ? 1 : 0;
+	ACCUM += DATAMEM[INSTR(1)];
+	PSWBITS.P = is_odd_nummer_of_bits(ACCUM);
 	IncrPC_1;
 }
 
@@ -240,7 +241,7 @@ typedef struct Instruction_storage
 	void (*i)(struct Memory*);
 	unsigned int n_bytes;
 	unsigned int n_ticks;
-	char *str_mnemonic;
+	char *mnemonic_str;
 } Instruction_storage;
 
 Instruction_storage instr[256] = 

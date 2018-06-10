@@ -159,9 +159,6 @@ char *memory_to_str(uint8_t *storage, size_t size)
 	
 	for (size_t i = 0; i < size; ++i)
 	{
-		// Max 4 characters in hex value + one space
-		char *strhex = (char*)malloc(5 * sizeof(char));
-		MALLOC_NULL_CHECK(strhex);
 		if (i % 8 == 0)
 		{
 			// max comment length is 14
@@ -173,9 +170,12 @@ char *memory_to_str(uint8_t *storage, size_t size)
 		
 		if (storage[i])
 		{
-			// 2 chars in opcode + one space
+			// # + 2 chars in opcode + one space + null character
+			char *strhex = (char*)malloc(5 * sizeof(char));
+			MALLOC_NULL_CHECK(strhex);
 			snprintf(strhex, 5, "#%02x ", storage[i]);
 			strcat(current_str, strhex);
+			free(strhex);
 		}
 		else strcat(current_str, "0 ");
 	}
