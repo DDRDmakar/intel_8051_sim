@@ -99,11 +99,6 @@ typedef struct Memory
 		
 	} DM;
 	
-	// Bit field
-	// Битовая адресация
-	// Адреса 11 байтов, которые поддерживают битовую адресацию
-	uint8_t *DM_BITS[11];
-	
 	union Program_memory
 	{
 		// 16 bit address
