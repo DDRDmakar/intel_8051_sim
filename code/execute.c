@@ -49,7 +49,13 @@ int execute(Memory *mem)
 		}
 		
 		Instruction_storage current_instruction = instr[mem->PM.RPM[mem->PC]];
-		if (current_instruction.i) current_instruction.i(mem);
+		
+		/* ============ */
+		
+		if (current_instruction.i) current_instruction.i(mem); // Исполнение инструкции
+		
+		/* ============ */
+		
 		else 
 		{
 			const char *err_msg = "Unknown instruction \"%s\" (OPCODE 0x%02x) at address 0x%04x";
@@ -62,6 +68,9 @@ int execute(Memory *mem)
 			return 1;
 		}
 		
+		// Устанавливается флаг паритета
+		PSWBITS.P = is_odd_number_of_bits(ACCUM);
+		
 		if (extvar->debug && extvar->verbose)
 		{
 			if (mem->PC < RPM_SIZE && extvar->breakpoints[mem->PC] == -1) breakpoint(mem);
@@ -71,11 +80,9 @@ int execute(Memory *mem)
 			reqtime.tv_sec = 0;
 			reqtime.tv_nsec = extvar->clk * current_instruction.n_ticks * 1000000;
 			nanosleep(&reqtime, NULL);
-			
-			//nanosleep(1000000 * extvar->clk * current_instruction.n_ticks);
 		}
 		
-		++mem->PC;
+		IncrPC_1;
 	}
 	
 	snapshot_end(mem);

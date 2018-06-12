@@ -74,6 +74,22 @@ void setup_memory(Memory *mem)
 	free(plain_text);
 	
 	free(root);
+	
+	
+	// Setup bit field
+	mem->DM_BITS[0] = &mem->DM.RDM_REG.P0;
+	mem->DM_BITS[1] = &mem->DM.RDM_REG.TCON;
+	mem->DM_BITS[2] = &mem->DM.RDM_REG.P1;
+	mem->DM_BITS[3] = &mem->DM.RDM_REG.SCON;
+	mem->DM_BITS[4] = &mem->DM.RDM_REG.P2;
+	mem->DM_BITS[5] = &mem->DM.RDM_REG.IE;
+	mem->DM_BITS[6] = &mem->DM.RDM_REG.P3;
+	mem->DM_BITS[7] = &mem->DM.RDM_REG.IP;
+	mem->DM_BITS[8] = &mem->DM.RDM_REG.PSW.PSW;
+	mem->DM_BITS[9] = &mem->DM.RDM_REG.ACC;
+	mem->DM_BITS[10] = &mem->DM.RDM_REG.B;
+	
+	mem->DM.RDM_REG.SP = 0x07;
 }
 
 void fill_memory(uint8_t *storage, char ***storage_str, const char *line, const unsigned int memory_size)

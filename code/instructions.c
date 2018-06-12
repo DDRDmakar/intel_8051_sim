@@ -30,10 +30,14 @@ DPTR – регистр указатель данных;
 ( ) – содержимое ячейки памяти или регистра.
  */
 
-// Аккумулятор
-#define ACCUM FUNREGS.ACC
 // Специальные регистры
 #define FUNREGS mem->DM.RDM_REG
+// Поля PSW
+#define PSWBITS FUNREGS.PSW.BITS
+// Флаг переноса
+#define COUT PSWBITS.C
+// Аккумулятор
+#define ACCUM FUNREGS.ACC
 // Резидентная память программы
 #define PROGMEM mem->PM.RPM
 // Внешняя память программы
@@ -61,14 +65,23 @@ DPTR – регистр указатель данных;
 #define IncrPC_1 ++mem->PC
 // Увеличить счётчик инструкций на 2
 #define IncrPC_2 mem->PC+=2
+// Уменьшить счётчик инструкций на 1
+#define DecPC_1 --mem->PC
 
-// Поля PSW
-#define PSWBITS FUNREGS.PSW.BITS
+// Количество единичных битов в аккамуляторе нечётное ? 1 : 0;
+#define ODD_ACCUM PSWBITS.P = is_odd_number_of_bits(ACCUM)
+
+// Обмен 2 8-битных чисел
+#define XCH(a, b) \
+	uint8_t t = a; \
+	a = b; \
+	b = t; \
 
 // Объявление функции-инструкции
-#define I(x) void x(struct Memory *mem)
+#define I(x) void x(Memory *mem)
 
-uint8_t is_odd_nummer_of_bits(uint8_t a)
+
+uint8_t is_odd_number_of_bits(uint8_t a)
 {
 	uint8_t answer = 0;
 	while (a)
@@ -78,6 +91,56 @@ uint8_t is_odd_nummer_of_bits(uint8_t a)
 	}
 	return answer & 0x01;
 }
+
+// Бит, адресуемый байтом после инструкции
+// Адреса битов на стр. 19
+uint8_t *bitbyteptr(Memory *mem, uint8_t addr)
+{
+	if (addr < 0x80)
+		return &FUNREGS.MEM[0x20 + (addr/8)];
+	else if (0x80 <= addr && addr <= 0x87)
+		return &FUNREGS.P0;
+	else if (0x88 <= addr && addr <= 0x8F)
+		return &FUNREGS.TCON;
+	else if (0x90 <= addr && addr <= 0x97)
+		return &FUNREGS.P1;
+	else if (0x98 <= addr && addr <= 0x9F)
+		return &FUNREGS.SCON;
+	else if (0xA0 <= addr && addr <= 0xA7)
+		return &FUNREGS.P2;
+	else if ((0xA8 <= addr && addr <= 0xAC) || addr == 0xAF)
+		return &FUNREGS.IE;
+	else if (0xB0 <= addr && addr <= 0xB7)
+		return &FUNREGS.P3;
+	else if (0xB8 <= addr && addr <= 0xBC)
+		return &FUNREGS.IP;
+	else if (0xD0 <= addr && addr <= 0xD7)
+		return &FUNREGS.PSW.PSW;
+	else if (0xE0 <= addr && addr <= 0xE7)
+		return &FUNREGS.ACC;
+	else if (0xF0 <= addr && addr <= 0xF7)
+		return &FUNREGS.B;
+	
+	else return NULL; /*ERR*/
+}
+
+uint8_t getbit(Memory *mem, uint8_t addr)
+{
+	uint8_t *byteptr = bitbyteptr(mem, addr);
+	if (byteptr) return (*byteptr) & (1 << addr%8);
+	else return 0; /*ERR*/
+}
+
+void setbit(Memory *mem, uint8_t addr, uint8_t value)
+{
+	uint8_t *byteptr = bitbyteptr(mem, addr);
+	if (byteptr)
+	{
+		if (value) *byteptr |=  (1 << addr%8);
+		else       *byteptr &= ~(1 << addr%8);
+	}
+}
+
 
 // MOV are RDM only
 
@@ -115,14 +178,14 @@ I(mov_rdm_d) { DATAMEM[Ri] = INSTR(1); IncrPC_1; }
 
 I(mov_dptr_d16) // Загрузка указателя данных
 { 
-	FUNREGS.DPTR.LH.DPH = INSTR(1);
-	FUNREGS.DPTR.LH.DPL = INSTR(2);
+	FUNREGS.DPTR.LH.DPL = INSTR(1);
+	FUNREGS.DPTR.LH.DPH = INSTR(2);
 	IncrPC_2;
 }
 
 I(movc_a_adptr) { ACCUM = E_PROGMEM[ACCUM + FUNREGS.DPTR.DPTR]; }
 
-I(movc_a_apc) { IncrPC_1; ACCUM = E_PROGMEM[ACCUM + mem->PC]; }
+I(movc_a_apc) { ACCUM = E_PROGMEM[ACCUM + mem->PC + 1]; }
 
 I(movx_a_edm) { ACCUM = E_DATAMEM[Ri]; }
 
@@ -136,33 +199,17 @@ I(push_ad) { DATAMEM[++FUNREGS.SP] = DATAMEM[INSTR(1)]; IncrPC_1; }
 
 I(pop_ad) { DATAMEM[INSTR(1)] = DATAMEM[FUNREGS.SP--]; IncrPC_1; }
 
-I(xch_a_rn)
-{
-	uint8_t t = ACCUM;
-	ACCUM = Rn;
-	Rn = t;
-}
+I(xch_a_rn) { XCH(ACCUM, Rn); }
 
-I(xch_a_ad)
-{
-	uint8_t t = ACCUM;
-	ACCUM = DATAMEM[INSTR(1)];
-	DATAMEM[INSTR(1)] = t;
-	IncrPC_1;
-}
+I(xch_a_ad) { XCH(ACCUM, DATAMEM[INSTR(1)]); IncrPC_1; }
 
-I(xch_a_rdm)
-{
-	uint8_t t = ACCUM;
-	ACCUM = DATAMEM[Ri];
-	DATAMEM[Ri] = t;
-}
+I(xch_a_rdm) { XCH(ACCUM, DATAMEM[Ri]); }
 
 I(xchd_a_rdm)
 {
-	uint8_t t = ACCUM & 0x0F;
-	ACCUM = DATAMEM[Ri] & 0x0F;
-	DATAMEM[Ri] = t;
+	uint8_t t = ACCUM;
+	ACCUM = (ACCUM & 0xF0) | (DATAMEM[Ri] & 0x0F);
+	DATAMEM[Ri] = (DATAMEM[Ri] & 0xF0) | (t & 0x0F);
 }
 
 
@@ -175,8 +222,9 @@ I(xchd_a_rdm)
 	табл. 4.
 	
 	Флаг С устанавливается при переносе из разряда D7, т. е. в случае,
-	если результат не помещается в восемь разрядов; флаг АС
-	устанавливается при переносе из разряда D3 в командах сложения и
+	если результат не помещается в восемь разрядов; 
+	
+	Флаг АС устанавливается при переносе из разряда D3 в командах сложения и
 	вычитания и служит для реализации десятичной арифметики. Этот
 	признак используется командой DAA.
 	
@@ -191,46 +239,274 @@ I(xchd_a_rdm)
 
 */
 
-I(add_a_rn)
-{ 
-	PSWBITS.C = ((uint16_t)ACCUM + (uint16_t)Rn > 255) ? 1 : 0;
-	PSWBITS.AC = ((ACCUM & 0x0F) + (Rn & 0x0F) > 15) ? 1 : 0;
-	PSWBITS.OV = ((ACCUM & 0x7F) + (Rn & 0x7F) > 127) ? 1 : 0;
-	ACCUM += Rn;
-	PSWBITS.P = is_odd_nummer_of_bits(ACCUM);
-}
+#define ADDC(a, b, c) \
+	COUT = ((uint16_t)a + b + c > 0x00FF) ? 1 : 0; \
+	PSWBITS.AC = ((a & 0x0F) + (b & 0x0F) + (c & 0x0F) > 0x0F) ? 1 : 0; \
+	PSWBITS.OV = ((a & 0x7F) + (b & 0x7F) + (c & 0x7F) > 0x7F) ? 1 : 0; \
+	a += b + c; \
 
-I(add_a_ad)
+I(add_a_rn) { ADDC(ACCUM, Rn, 0); }
+
+I(add_a_ad) { ADDC(ACCUM, DATAMEM[INSTR(1)], 0); IncrPC_1; }
+
+I(add_a_rdm) { ADDC(ACCUM, DATAMEM[Ri], 0); }
+
+I(add_a_d) { ADDC(ACCUM, INSTR(1), 0); IncrPC_1; }
+
+I(addc_a_rn) { ADDC(ACCUM, Rn, COUT); }
+
+I(addc_a_ad) { ADDC(ACCUM, DATAMEM[INSTR(1)], COUT); IncrPC_1; }
+
+I(addc_a_rdm) { ADDC(ACCUM, DATAMEM[Ri], COUT); }
+
+I(addc_a_d) { ADDC(ACCUM, INSTR(1), COUT); IncrPC_1; }
+
+I(da_a)
 {
-	PSWBITS.C = ((uint16_t)ACCUM + (uint16_t)DATAMEM[INSTR(1)] > 255) ? 1 : 0;
-	PSWBITS.AC = ((ACCUM & 0x0F) + (DATAMEM[INSTR(1)] & 0x0F) > 15) ? 1 : 0;
-	PSWBITS.OV = ((ACCUM & 0x7F) + (DATAMEM[INSTR(1)] & 0x7F) > 127) ? 1 : 0;
-	ACCUM += DATAMEM[INSTR(1)];
-	PSWBITS.P = is_odd_nummer_of_bits(ACCUM);
-	IncrPC_1;
+	if ((ACCUM & 0x0F) > 0x09 || PSWBITS.AC) ACCUM = (ACCUM & 0xF0) | ((ACCUM + 0x06) & 0x0F);
+	if ((ACCUM & 0xF0) > 0x90 || COUT)  ACCUM = (ACCUM & 0x0F) | ((ACCUM + 0x60) & 0xF0);
+}
+
+
+#define SUBB(a, b, c) \
+	COUT = a < (b + c) ? 1 : 0; \
+	PSWBITS.AC = (a & 0x0F) < (b & 0x0F) + (c & 0x0F) ? 1 : 0; \
+	PSWBITS.OV = (a & 0x7F) < (b & 0x7F) + (c & 0x7F) ? 1 : 0; \
+	a -= b + c; \
+
+I(subb_a_rn) { SUBB(ACCUM, Rn, COUT); }
+
+I(subb_a_ad) { SUBB(ACCUM, DATAMEM[INSTR(1)], COUT); IncrPC_1; }
+
+I(subb_a_rdm) { SUBB(ACCUM, DATAMEM[Ri], COUT); }
+
+I(subb_a_d) { SUBB(ACCUM, INSTR(1), COUT); IncrPC_1; }
+
+
+I(inc_a) { ++(ACCUM); }
+
+I(inc_rn) { ++(Rn); }
+
+I(inc_ad) { ++( DATAMEM[INSTR(1)] ); IncrPC_1; }
+
+I(inc_rdm) { ++( DATAMEM[Ri] ); }
+
+I(inc_dptr) { ++(FUNREGS.DPTR.DPTR); }
+
+I(dec_a) { --ACCUM; }
+
+I(dec_rn) { --Rn; }
+
+I(dec_ad) { --( DATAMEM[INSTR(1)] ); IncrPC_1; }
+
+I(dec_rdm) { --( DATAMEM[Ri] ); }
+
+I(mul_a_b)
+{
+	uint16_t result = (uint16_t)ACCUM * (uint16_t)FUNREGS.B;
+	COUT = 0;
+	PSWBITS.OV = result > 0xFF ? 1 : 0;
+	
+	ACCUM = result & 0x00FF;
+	FUNREGS.B = (result & 0xFF00) >> 8;
+	
+}
+
+I(div_a_b)
+{
+	COUT = 0;
+	PSWBITS.OV = !FUNREGS.B;
+	
+	ACCUM = ACCUM / FUNREGS.B;
+	FUNREGS.B = ACCUM % FUNREGS.B;
+	
 }
 
 
 
 
+// ### Логические операции
+
+I(anl_a_rn) { ACCUM &= Rn; }
+
+I(anl_a_ad) { ACCUM &= DATAMEM[INSTR(1)]; IncrPC_1; }
+
+I(anl_a_rdm) { ACCUM &= DATAMEM[Ri]; }
+
+I(anl_a_d) { ACCUM &= INSTR(1); IncrPC_1; }
+
+I(anl_ad_a) { DATAMEM[INSTR(1)] &= ACCUM; IncrPC_1; }
+
+I(anl_ad_d) { DATAMEM[INSTR(1)] &= INSTR(2); IncrPC_2; }
+
+I(orl_a_rn) { ACCUM |= Rn; }
+
+I(orl_a_ad) { ACCUM |= DATAMEM[INSTR(1)]; IncrPC_1; }
+
+I(orl_a_rdm) { ACCUM |= DATAMEM[Ri]; }
+
+I(orl_a_d) { ACCUM |= INSTR(1); IncrPC_1; }
+
+I(orl_ad_a) { DATAMEM[INSTR(1)] |= ACCUM; IncrPC_1; }
+
+I(orl_ad_d) { DATAMEM[INSTR(1)] |= INSTR(2); IncrPC_2; }
+
+I(xrl_a_rn) { ACCUM ^= Rn; }
+
+I(xrl_a_ad) { ACCUM ^= DATAMEM[INSTR(1)]; IncrPC_1; }
+
+I(xrl_a_rdm) { ACCUM ^= DATAMEM[Ri]; }
+
+I(xrl_a_d) { ACCUM ^= INSTR(1); IncrPC_1; }
+
+I(xrl_ad_a) { DATAMEM[INSTR(1)] ^= ACCUM; IncrPC_1; }
+
+I(xrl_ad_d) { DATAMEM[INSTR(1)] ^= INSTR(2); IncrPC_2; }
+
+// Accum is uint8_t
+
+I(clr_a) { ACCUM = 0; }
+
+I(cpl_a) { ACCUM = ~ACCUM; }
+
+I(rl_a) { ACCUM = (ACCUM << 1) | (ACCUM >> 7); }
+
+I(rlc_a)
+{
+	unsigned t = ACCUM >> 7;
+	ACCUM = (ACCUM << 1) | COUT;
+	COUT = t;
+}
+
+I(rr_a) { ACCUM = (ACCUM >> 1) | (ACCUM << 7); }
+
+I(rrc_a)
+{
+	unsigned t = ACCUM & 0x01;
+	ACCUM = (ACCUM >> 1) | (COUT << 7);
+	COUT = t;
+}
+
+I(swap_a) { ACCUM = ((ACCUM & 0x0F) << 4) | ((ACCUM & 0xF0) >> 4); }
 
 
 
+// ### Команды передачи управления
+/*
+ * Команда CJNE устанавливает флаг C,
+ * если первый операнд оказывается меньше второго. 
+ * Команда JBC сбрасывает флаг C в случае перехода
+ */
+
+// 1, а не 2, потому что после исполнения инструкции PC инкрементится на 1
+// 2, а не 3
+
+I(ljmp_ad16) { mem->PC = (uint16_t)INSTR(2) << 8 | INSTR(1); DecPC_1; }
+
+I(ajmp_ad11) { mem->PC = ((mem->PC + 2) & 0xF800) | INSTR(1) | (uint16_t)(INSTR(0) & 0xE0) << 3; DecPC_1; }
+
+I(sjmp_rel) { mem->PC += ((int8_t)INSTR(1) + 1/*2*/); }
+
+I(jmp_a_dptr) { mem->PC = ACCUM + FUNREGS.DPTR.DPTR; DecPC_1; }
+
+
+// def_len - длина инструкции в байтах. Я указываю на 1 меньше, потому что в функции execute к PC прибавляется ещё 1
+// def_cond - условие перехода
+// def_offset - относительный адрес
+#define JMP_IF(def_len, def_cond, def_rel) mem->PC += def_len + (int8_t)(def_cond ? (int8_t)(def_rel) : 0);
+
+                 /*2*/
+I(jz_rel) { JMP_IF(1, !ACCUM, INSTR(1)); }
+
+I(jnz_rel) { JMP_IF(1, ACCUM, INSTR(1)); }
+
+I(jc_rel) { JMP_IF(1, COUT, INSTR(1)); }
+
+I(jnc_rel) { JMP_IF(1, !COUT, INSTR(1)); }
+
+I(jb_bit_rel) { JMP_IF(2, getbit(mem, INSTR(1)), INSTR(2)) }
+
+I(jnb_bit_rel) { JMP_IF(2, !getbit(mem, INSTR(1)), INSTR(2)) }
+
+I(jbc_bit_rel)
+{
+	if (getbit(mem, INSTR(1)))
+	{
+		setbit(mem, INSTR(1), 0);
+		mem->PC += (int8_t)INSTR(2);
+		COUT = 0;
+	}
+	IncrPC_2;
+}
+
+I(djnz_rn_rel) { --Rn; JMP_IF(1, Rn, INSTR(1)); }
+
+I(djnz_ad_rel) { --DATAMEM[INSTR(1)]; JMP_IF(2, DATAMEM[INSTR(1)], INSTR(2)); }
+
+I(cjne_a_ad_rel) { COUT = ACCUM < DATAMEM[INSTR(1)] ? 1 : 0; JMP_IF(2, ACCUM != DATAMEM[INSTR(1)], INSTR(2)); }
+
+I(cjne_a_d_rel) { COUT = ACCUM < INSTR(1) ? 1 : 0; JMP_IF(2, ACCUM != INSTR(1), INSTR(2)); }
+
+I(cjne_rn_d_rel) { COUT = Rn < INSTR(1) ? 1 : 0; JMP_IF(2, Rn != INSTR(1), INSTR(2)); }
+
+I(cjne_rdm_d_rel) { COUT = DATAMEM[Ri] < INSTR(1) ? 1 : 0; JMP_IF(2, DATAMEM[Ri] != INSTR(1), INSTR(2)); }
+
+I(lcall_ad16)
+{
+	mem->PC += 3;
+	DATAMEM[++FUNREGS.SP] = (uint8_t)(mem->PC & 0x00FF); 
+	DATAMEM[++FUNREGS.SP] = (uint8_t)(mem->PC & 0xFF00); 
+	mem->PC = (uint16_t)INSTR(2) << 8 | INSTR(1);
+	DecPC_1;
+}
+
+I(acall_ad11)
+{
+	mem->PC += 2;
+	DATAMEM[++FUNREGS.SP] = (uint8_t)(mem->PC & 0x00FF); 
+	DATAMEM[++FUNREGS.SP] = (uint8_t)(mem->PC & 0xFF00); 
+	mem->PC = (mem->PC & 0xF800) | INSTR(1) | (uint16_t)(INSTR(0) & 0xE0) << 3;
+	DecPC_1;
+}
+
+I(ret) 
+{
+	mem->PC = ((uint16_t)DATAMEM[FUNREGS.SP] << 8) | (uint16_t)DATAMEM[FUNREGS.SP - 1]; 
+	FUNREGS.SP -= 2;
+	DecPC_1;
+}
+
+I(reti) { ret(mem); }
+
+I(nop) { (void)mem; } // Чтобы компилятор не ругался
 
 
 
+// ### Операции с битами
 
+I(clr_c)  { COUT = 0; }
 
+I(clr_bit)  { setbit(mem, INSTR(1), 0); IncrPC_1; }
 
+I(setb_c) { COUT = 1; }
 
+I(setb_bit) { setbit(mem, INSTR(1), 1); IncrPC_1; }
 
+I(cpl_c) { COUT = COUT ? 0 : 1; }
 
+I(cpl_bit) { setbit(mem, INSTR(1), getbit(mem, INSTR(1)) ? 0 : 1); IncrPC_1; }
 
+I(anl_c_bit) { COUT = (COUT && getbit(mem, INSTR(1))) ? 1 : 0; IncrPC_1; }
 
+I(anl_c_nbit) { COUT = (COUT && !getbit(mem, INSTR(1))) ? 1 : 0; IncrPC_1; }
 
+I(orl_c_bit) { COUT = (COUT || getbit(mem, INSTR(1))) ? 1 : 0; IncrPC_1; }
 
+I(orl_c_nbit) { COUT = (COUT || !getbit(mem, INSTR(1))) ? 1 : 0; IncrPC_1; }
 
-I(nop) { (void)mem; }
+I(mov_c_bit) { COUT = getbit(mem, INSTR(1)) ? 1 : 0; IncrPC_1; }
+
+I(mov_bit_c) { setbit(mem, INSTR(1), COUT); IncrPC_1; }
 
 
 
@@ -238,7 +514,7 @@ I(nop) { (void)mem; }
 
 typedef struct Instruction_storage
 {
-	void (*i)(struct Memory*);
+	void (*i)(Memory*);
 	unsigned int n_bytes;
 	unsigned int n_ticks;
 	char *mnemonic_str;

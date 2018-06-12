@@ -21,8 +21,10 @@ typedef struct Memory
 		struct Rdm_and_xfr
 		{
 			// 8 bit address
-			// Addresses [00 - 7F]
-			uint8_t MEM[128]; // 128 resident data memory
+			
+			// Addressed bits here
+			uint8_t MEM[128]; // [00-7F] 128 resident data memory
+			
 			uint8_t P0; //  [80] SFR port 0
 			uint8_t SP; //  [81] Stack pointer
 			
@@ -96,6 +98,11 @@ typedef struct Memory
 		
 		
 	} DM;
+	
+	// Bit field
+	// Битовая адресация
+	// Адреса 11 байтов, которые поддерживают битовую адресацию
+	uint8_t *DM_BITS[11];
 	
 	union Program_memory
 	{
