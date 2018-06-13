@@ -30,25 +30,36 @@ int execute(Memory *mem)
 	//uint8_t *data_memory = extvar->EPM_active ? mem->DM.EDM : mem->DM.RDM;
 	//size_t data_memory_size = extvar->EPM_active ? EDM_SIZE : RDM_SIZE;
 	
+	size_t tpc; // Temporary PC
+	
 	mem->PC = PROG_START;
 	while (mem->PC < prog_memory_size)
 	{
+		tpc = mem->PC;
 		
-		if (mem->PM_str[mem->PC] == NULL)
+		if (mem->PM_str[tpc] == NULL)
 		{
-			if (extvar->debug && extvar->verbose) printf("Program ended at 0x%04x\n", (unsigned int)mem->PC);
+			if (extvar->debug && extvar->verbose) printf("Program ended at 0x%04x\n", (unsigned int)tpc);
 			break;
 		}
 		
+		Instruction_storage current_instruction = instr[mem->PM.RPM[tpc]];
+		
 		if (extvar->debug && extvar->verbose)
 		{
-			printf("[PC 0x%04x]: %s\n", (unsigned int)mem->PC, mem->PM_str[mem->PC]);
+			printf("[PC 0x%04x]: 0x%02x (%s)\n", (unsigned int)tpc, mem->PM.EPM[tpc], mem->PM_str[tpc]);
 			
-			if (mem->PC < RPM_SIZE && extvar->breakpoints[mem->PC] == 1) breakpoint(mem);
-			if (mem->PC < RPM_SIZE && extvar->savepoints[mem->PC] == 1) snapshot(mem);
+			if (
+				(current_instruction.n_bytes >= 1 && tpc+0 < prog_memory_size && extvar->breakpoints[tpc+0] == -1) ||
+				(current_instruction.n_bytes >= 2 && tpc+1 < prog_memory_size && extvar->breakpoints[tpc+1] == -1) ||
+				(current_instruction.n_bytes == 3 && tpc+2 < prog_memory_size && extvar->breakpoints[tpc+2] == -1)
+			) breakpoint(mem);
+			if (
+				(current_instruction.n_bytes >= 1 && tpc+0 < prog_memory_size && extvar->savepoints[tpc+0] == -1) ||
+				(current_instruction.n_bytes >= 2 && tpc+1 < prog_memory_size && extvar->savepoints[tpc+1] == -1) ||
+				(current_instruction.n_bytes == 3 && tpc+2 < prog_memory_size && extvar->savepoints[tpc+2] == -1)
+			) snapshot(mem);
 		}
-		
-		Instruction_storage current_instruction = instr[mem->PM.RPM[mem->PC]];
 		
 		/* ============ */
 		
@@ -60,10 +71,10 @@ int execute(Memory *mem)
 		{
 			const char *err_msg = "Unknown instruction \"%s\" (OPCODE 0x%02x) at address 0x%04x";
 			// ALLOCATE length of error message + mnemonic length + opcode + PC + 1
-			size_t errlen = strlen(err_msg) + strlen(mem->PM_str[mem->PC]) + 2 + 4 + 1;
+			size_t errlen = strlen(err_msg) + strlen(mem->PM_str[tpc]) + 2 + 4 + 1;
 			char *err = (char*)malloc(errlen * sizeof(char));
 			MALLOC_NULL_CHECK(err);
-			snprintf(err, errlen, err_msg, mem->PM_str[mem->PC], (unsigned int)mem->PM.EPM[mem->PC], (unsigned int)mem->PC);
+			snprintf(err, errlen, err_msg, mem->PM_str[tpc], (unsigned int)mem->PM.EPM[tpc], (unsigned int)tpc);
 			progerr(err);
 			return 1;
 		}
@@ -73,8 +84,16 @@ int execute(Memory *mem)
 		
 		if (extvar->debug && extvar->verbose)
 		{
-			if (mem->PC < RPM_SIZE && extvar->breakpoints[mem->PC] == -1) breakpoint(mem);
-			if (mem->PC < RPM_SIZE && extvar->savepoints[mem->PC] == -1) snapshot(mem);
+			if (
+				(current_instruction.n_bytes >= 1 && tpc+0 < prog_memory_size && extvar->breakpoints[tpc+0] == 1) ||
+				(current_instruction.n_bytes >= 2 && tpc+1 < prog_memory_size && extvar->breakpoints[tpc+1] == 1) ||
+				(current_instruction.n_bytes == 3 && tpc+2 < prog_memory_size && extvar->breakpoints[tpc+2] == 1)
+			) breakpoint(mem);
+			if (
+				(current_instruction.n_bytes >= 1 && tpc+0 < prog_memory_size && extvar->savepoints[tpc+0] == 1) ||
+				(current_instruction.n_bytes >= 2 && tpc+1 < prog_memory_size && extvar->savepoints[tpc+1] == 1) ||
+				(current_instruction.n_bytes == 3 && tpc+2 < prog_memory_size && extvar->savepoints[tpc+2] == 1)
+			) snapshot(mem);
 			
 			struct timespec reqtime;
 			reqtime.tv_sec = 0;
@@ -105,24 +124,34 @@ void snapshot(Memory *mem)
 	
 	time_t timer;
 	// ALLOCATE
-	//    CWD length +
-	//    leng
-	//    26 characters in date + 
+	//    35 characters in date + 
 	//    11 characters in file number + 
 	//    filename length + 
 	//    1
-	size_t buffer_len = 26 + 11 + strlen(extvar->output_file_name) + 1;
+	size_t buffer_len = 35 + 11 + strlen(extvar->output_file_name) + 1;
 	char *buffer = (char*)malloc(buffer_len * sizeof(char));
 	MALLOC_NULL_CHECK(buffer);
 	
 	// Max 26 characters in date
-	char timebuffer[26];
+	char timebuffer[35];
 	struct tm *tm_info;
 	time(&timer);
 	tm_info = localtime(&timer);
-	strftime(timebuffer, sizeof(timebuffer)/sizeof(char), "__%Y_%m_%d__%H_%M_%S__", tm_info);
+	strftime(timebuffer, sizeof(timebuffer)/sizeof(char), "%Y_%m_%d__%H_%M_%S", tm_info);
 	
-	snprintf(buffer, buffer_len, "%d%s%s", snapshot_counter, timebuffer, extvar->output_file_name);
+	snprintf(buffer, buffer_len, "%s__%d__%s", timebuffer, snapshot_counter, extvar->output_file_name);
+	
+	if (extvar->debug)
+	{
+		const char *mes_template = "========> Saving machine state into file \"%s\"\n";
+		// Allocate length of message + length of filename + 1;
+		size_t mes_len = strlen(buffer) + strlen(mes_template) + 1;
+		char *mes = (char*)malloc(mes_len * sizeof(char));
+		snprintf(mes, mes_len, mes_template, buffer);
+		printf("%s", mes);
+		free(mes);
+	}
+	
 	memory_to_file(mem, buffer);
 	
 	free(buffer);

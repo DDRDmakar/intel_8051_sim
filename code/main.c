@@ -54,6 +54,7 @@ int main(int argc, char** argv)
 			
 			size_t flag_is_single = (strlen(argv[i]) == 2);
 			int flag_not_last = (i+1 < argc);
+			if (flag_not_last && strlen(argv[i+1]) == 0) progstop("Error - empty argument.", 1);
 			
 			for (unsigned j = 1; j < strlen(argv[i]); ++j)
 			{
@@ -119,18 +120,42 @@ int main(int argc, char** argv)
 					}
 					case 'b':
 					{
-						if (flag_is_single && flag_not_last && is_uhex_num(argv[i+1]))
+						// -b ^FF
+						// -b _FF
+						if (
+							flag_is_single && 
+							flag_not_last && 
+							is_uhex_num(argv[i+1]) && 
+							(argv[i+1][0] == '^' || argv[i+1][0] == '_') &&
+							(2 <= strlen(argv[i+1]) && strlen(argv[i+1]) <= 5)
+						)
 						{
-							// TODO add breakpoint here
+							char *strvalue = &argv[i+1][1];
+							if   (argv[i+1][0] == '^') extvar->breakpoints[(uint16_t)strtoul(strvalue, NULL, 16)] = -1;
+							else extvar->breakpoints[(uint16_t)strtoul(strvalue, NULL, 16)] = 1;
+							
+							break;
 						}
 						else progstop("Incorrect argument - breakpoint location", 1);
 						break;
 					}
 					case 's':
 					{
-						if (flag_is_single && flag_not_last && is_uhex_num(argv[i+1]))
+						// -s ^FF
+						// -s _FF
+						if (
+							flag_is_single && 
+							flag_not_last && 
+							is_uhex_num(argv[i+1]) && 
+							(argv[i+1][0] == '^' || argv[i+1][0] == '_') &&
+							(2 <= strlen(argv[i+1]) && strlen(argv[i+1]) <= 5)
+						)
 						{
-							// TODO add savepoint here
+							char *strvalue = &argv[i+1][1];
+							if   (argv[i+1][0] == '^') extvar->savepoints[(uint16_t)strtoul(strvalue, NULL, 16)] = -1;
+							else extvar->savepoints[(uint16_t)strtoul(strvalue, NULL, 16)] = 1;
+							
+							break;
 						}
 						else progstop("Incorrect argument - savepoint location", 1);
 						break;
@@ -214,8 +239,8 @@ void setup_extvar(void)
 	extvar->debug = 0;
 	extvar->verbose = 0;
 	extvar->mode = 1;
-	extvar->breakpoints = (int*)calloc(RPM_SIZE, sizeof(int)); // 0 - nothing; -1 - before; 1 - after
-	extvar->savepoints = (int*)calloc(RPM_SIZE, sizeof(int));  // 0 - nothing; -1 - before; 1 - after
+	extvar->breakpoints = (int*)calloc(EPM_SIZE, sizeof(int)); // 0 - nothing; -1 - before; 1 - after
+	extvar->savepoints = (int*)calloc(EPM_SIZE, sizeof(int));  // 0 - nothing; -1 - before; 1 - after
 }
 
 void free_extvar(void)
