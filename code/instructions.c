@@ -35,7 +35,7 @@ DPTR – регистр указатель данных;
 // Поля PSW
 #define PSWBITS FUNREGS.PSW.BITS
 // Флаг переноса
-#define COUT PSWBITS.C
+#define Cout PSWBITS.C
 // Аккумулятор
 #define ACCUM FUNREGS.ACC
 // Резидентная память программы
@@ -177,9 +177,10 @@ I(mov_rdm_ad) { DATAMEM[Ri] = DATAMEM[INSTR(1)]; IncrPC_1; }
 I(mov_rdm_d) { DATAMEM[Ri] = INSTR(1); IncrPC_1; }
 
 I(mov_dptr_d16) // Загрузка указателя данных
-{ 
-	FUNREGS.DPTR.LH.DPL = INSTR(1);
-	FUNREGS.DPTR.LH.DPH = INSTR(2);
+{
+	// см стр. 59
+	FUNREGS.DPTR.LH.DPH = INSTR(1);
+	FUNREGS.DPTR.LH.DPL = INSTR(2);
 	IncrPC_2;
 }
 
@@ -240,7 +241,7 @@ I(xchd_a_rdm)
 */
 
 #define ADDC(a, b, c) \
-	COUT = ((uint16_t)a + b + c > 0x00FF) ? 1 : 0; \
+	Cout = ((uint16_t)a + b + c > 0x00FF) ? 1 : 0; \
 	PSWBITS.AC = ((a & 0x0F) + (b & 0x0F) + (c & 0x0F) > 0x0F) ? 1 : 0; \
 	PSWBITS.OV = ((a & 0x7F) + (b & 0x7F) + (c & 0x7F) > 0x7F) ? 1 : 0; \
 	a += b + c; \
@@ -253,34 +254,34 @@ I(add_a_rdm) { ADDC(ACCUM, DATAMEM[Ri], 0); }
 
 I(add_a_d) { ADDC(ACCUM, INSTR(1), 0); IncrPC_1; }
 
-I(addc_a_rn) { ADDC(ACCUM, Rn, COUT); }
+I(addc_a_rn) { ADDC(ACCUM, Rn, Cout); }
 
-I(addc_a_ad) { ADDC(ACCUM, DATAMEM[INSTR(1)], COUT); IncrPC_1; }
+I(addc_a_ad) { ADDC(ACCUM, DATAMEM[INSTR(1)], Cout); IncrPC_1; }
 
-I(addc_a_rdm) { ADDC(ACCUM, DATAMEM[Ri], COUT); }
+I(addc_a_rdm) { ADDC(ACCUM, DATAMEM[Ri], Cout); }
 
-I(addc_a_d) { ADDC(ACCUM, INSTR(1), COUT); IncrPC_1; }
+I(addc_a_d) { ADDC(ACCUM, INSTR(1), Cout); IncrPC_1; }
 
 I(da_a)
 {
 	if ((ACCUM & 0x0F) > 0x09 || PSWBITS.AC) ACCUM = (ACCUM & 0xF0) | ((ACCUM + 0x06) & 0x0F);
-	if ((ACCUM & 0xF0) > 0x90 || COUT)  ACCUM = (ACCUM & 0x0F) | ((ACCUM + 0x60) & 0xF0);
+	if ((ACCUM & 0xF0) > 0x90 || Cout)  ACCUM = (ACCUM & 0x0F) | ((ACCUM + 0x60) & 0xF0);
 }
 
 
 #define SUBB(a, b, c) \
-	COUT = a < (b + c) ? 1 : 0; \
+	Cout = a < (b + c) ? 1 : 0; \
 	PSWBITS.AC = (a & 0x0F) < (b & 0x0F) + (c & 0x0F) ? 1 : 0; \
 	PSWBITS.OV = (a & 0x7F) < (b & 0x7F) + (c & 0x7F) ? 1 : 0; \
 	a -= b + c; \
 
-I(subb_a_rn) { SUBB(ACCUM, Rn, COUT); }
+I(subb_a_rn) { SUBB(ACCUM, Rn, Cout); }
 
-I(subb_a_ad) { SUBB(ACCUM, DATAMEM[INSTR(1)], COUT); IncrPC_1; }
+I(subb_a_ad) { SUBB(ACCUM, DATAMEM[INSTR(1)], Cout); IncrPC_1; }
 
-I(subb_a_rdm) { SUBB(ACCUM, DATAMEM[Ri], COUT); }
+I(subb_a_rdm) { SUBB(ACCUM, DATAMEM[Ri], Cout); }
 
-I(subb_a_d) { SUBB(ACCUM, INSTR(1), COUT); IncrPC_1; }
+I(subb_a_d) { SUBB(ACCUM, INSTR(1), Cout); IncrPC_1; }
 
 
 I(inc_a) { ++(ACCUM); }
@@ -304,7 +305,7 @@ I(dec_rdm) { --( DATAMEM[Ri] ); }
 I(mul_a_b)
 {
 	uint16_t result = (uint16_t)ACCUM * (uint16_t)FUNREGS.B;
-	COUT = 0;
+	Cout = 0;
 	PSWBITS.OV = result > 0xFF ? 1 : 0;
 	
 	ACCUM = result & 0x00FF;
@@ -314,7 +315,7 @@ I(mul_a_b)
 
 I(div_a_b)
 {
-	COUT = 0;
+	Cout = 0;
 	PSWBITS.OV = !FUNREGS.B;
 	
 	ACCUM = ACCUM / FUNREGS.B;
@@ -374,8 +375,8 @@ I(rl_a) { ACCUM = (ACCUM << 1) | (ACCUM >> 7); }
 I(rlc_a)
 {
 	unsigned t = ACCUM >> 7;
-	ACCUM = (ACCUM << 1) | COUT;
-	COUT = t;
+	ACCUM = (ACCUM << 1) | Cout;
+	Cout = t;
 }
 
 I(rr_a) { ACCUM = (ACCUM >> 1) | (ACCUM << 7); }
@@ -383,8 +384,8 @@ I(rr_a) { ACCUM = (ACCUM >> 1) | (ACCUM << 7); }
 I(rrc_a)
 {
 	unsigned t = ACCUM & 0x01;
-	ACCUM = (ACCUM >> 1) | (COUT << 7);
-	COUT = t;
+	ACCUM = (ACCUM >> 1) | (Cout << 7);
+	Cout = t;
 }
 
 I(swap_a) { ACCUM = ((ACCUM & 0x0F) << 4) | ((ACCUM & 0xF0) >> 4); }
@@ -401,7 +402,7 @@ I(swap_a) { ACCUM = ((ACCUM & 0x0F) << 4) | ((ACCUM & 0xF0) >> 4); }
 // 1, а не 2, потому что после исполнения инструкции PC инкрементится на 1
 // 2, а не 3
 
-I(ljmp_ad16) { mem->PC = (uint16_t)INSTR(2) << 8 | INSTR(1); DecPC_1; }
+I(ljmp_ad16) { mem->PC = (uint16_t)INSTR(1) << 8 | INSTR(2); DecPC_1; }
 
 I(ajmp_ad11) { mem->PC = ((mem->PC + 2) & 0xF800) | INSTR(1) | (uint16_t)(INSTR(0) & 0xE0) << 3; DecPC_1; }
 
@@ -420,9 +421,9 @@ I(jz_rel) { JMP_IF(1, !ACCUM, INSTR(1)); }
 
 I(jnz_rel) { JMP_IF(1, ACCUM, INSTR(1)); }
 
-I(jc_rel) { JMP_IF(1, COUT, INSTR(1)); }
+I(jc_rel) { JMP_IF(1, Cout, INSTR(1)); }
 
-I(jnc_rel) { JMP_IF(1, !COUT, INSTR(1)); }
+I(jnc_rel) { JMP_IF(1, !Cout, INSTR(1)); }
 
 I(jb_bit_rel) { JMP_IF(2, getbit(mem, INSTR(1)), INSTR(2)) }
 
@@ -434,7 +435,7 @@ I(jbc_bit_rel)
 	{
 		setbit(mem, INSTR(1), 0);
 		mem->PC += (int8_t)INSTR(2);
-		COUT = 0;
+		Cout = 0;
 	}
 	IncrPC_2;
 }
@@ -443,20 +444,20 @@ I(djnz_rn_rel) { --Rn; JMP_IF(1, Rn, INSTR(1)); }
 
 I(djnz_ad_rel) { --DATAMEM[INSTR(1)]; JMP_IF(2, DATAMEM[INSTR(1)], INSTR(2)); }
 
-I(cjne_a_ad_rel) { COUT = ACCUM < DATAMEM[INSTR(1)] ? 1 : 0; JMP_IF(2, ACCUM != DATAMEM[INSTR(1)], INSTR(2)); }
+I(cjne_a_ad_rel) { Cout = ACCUM < DATAMEM[INSTR(1)] ? 1 : 0; JMP_IF(2, ACCUM != DATAMEM[INSTR(1)], INSTR(2)); }
 
-I(cjne_a_d_rel) { COUT = ACCUM < INSTR(1) ? 1 : 0; JMP_IF(2, ACCUM != INSTR(1), INSTR(2)); }
+I(cjne_a_d_rel) { Cout = ACCUM < INSTR(1) ? 1 : 0; JMP_IF(2, ACCUM != INSTR(1), INSTR(2)); }
 
-I(cjne_rn_d_rel) { COUT = Rn < INSTR(1) ? 1 : 0; JMP_IF(2, Rn != INSTR(1), INSTR(2)); }
+I(cjne_rn_d_rel) { Cout = Rn < INSTR(1) ? 1 : 0; JMP_IF(2, Rn != INSTR(1), INSTR(2)); }
 
-I(cjne_rdm_d_rel) { COUT = DATAMEM[Ri] < INSTR(1) ? 1 : 0; JMP_IF(2, DATAMEM[Ri] != INSTR(1), INSTR(2)); }
+I(cjne_rdm_d_rel) { Cout = DATAMEM[Ri] < INSTR(1) ? 1 : 0; JMP_IF(2, DATAMEM[Ri] != INSTR(1), INSTR(2)); }
 
 I(lcall_ad16)
 {
 	mem->PC += 3;
 	DATAMEM[++FUNREGS.SP] = (uint8_t)(mem->PC & 0x00FF); 
-	DATAMEM[++FUNREGS.SP] = (uint8_t)(mem->PC & 0xFF00); 
-	mem->PC = (uint16_t)INSTR(2) << 8 | INSTR(1);
+	DATAMEM[++FUNREGS.SP] = (uint8_t)((mem->PC & 0xFF00) >> 8); 
+	mem->PC = (uint16_t)INSTR(1) << 8 | INSTR(2);
 	DecPC_1;
 }
 
@@ -464,7 +465,7 @@ I(acall_ad11)
 {
 	mem->PC += 2;
 	DATAMEM[++FUNREGS.SP] = (uint8_t)(mem->PC & 0x00FF); 
-	DATAMEM[++FUNREGS.SP] = (uint8_t)(mem->PC & 0xFF00); 
+	DATAMEM[++FUNREGS.SP] = (uint8_t)((mem->PC & 0xFF00) >> 8); 
 	mem->PC = (mem->PC & 0xF800) | INSTR(1) | (uint16_t)(INSTR(0) & 0xE0) << 3;
 	DecPC_1;
 }
@@ -484,29 +485,29 @@ I(nop) { (void)mem; } // Чтобы компилятор не ругался
 
 // ### Операции с битами
 
-I(clr_c)  { COUT = 0; }
+I(clr_c)  { Cout = 0; }
 
 I(clr_bit)  { setbit(mem, INSTR(1), 0); IncrPC_1; }
 
-I(setb_c) { COUT = 1; }
+I(setb_c) { Cout = 1; }
 
 I(setb_bit) { setbit(mem, INSTR(1), 1); IncrPC_1; }
 
-I(cpl_c) { COUT = COUT ? 0 : 1; }
+I(cpl_c) { Cout = Cout ? 0 : 1; }
 
 I(cpl_bit) { setbit(mem, INSTR(1), getbit(mem, INSTR(1)) ? 0 : 1); IncrPC_1; }
 
-I(anl_c_bit) { COUT = (COUT && getbit(mem, INSTR(1))) ? 1 : 0; IncrPC_1; }
+I(anl_c_bit) { Cout = (Cout && getbit(mem, INSTR(1))) ? 1 : 0; IncrPC_1; }
 
-I(anl_c_nbit) { COUT = (COUT && !getbit(mem, INSTR(1))) ? 1 : 0; IncrPC_1; }
+I(anl_c_nbit) { Cout = (Cout && !getbit(mem, INSTR(1))) ? 1 : 0; IncrPC_1; }
 
-I(orl_c_bit) { COUT = (COUT || getbit(mem, INSTR(1))) ? 1 : 0; IncrPC_1; }
+I(orl_c_bit) { Cout = (Cout || getbit(mem, INSTR(1))) ? 1 : 0; IncrPC_1; }
 
-I(orl_c_nbit) { COUT = (COUT || !getbit(mem, INSTR(1))) ? 1 : 0; IncrPC_1; }
+I(orl_c_nbit) { Cout = (Cout || !getbit(mem, INSTR(1))) ? 1 : 0; IncrPC_1; }
 
-I(mov_c_bit) { COUT = getbit(mem, INSTR(1)) ? 1 : 0; IncrPC_1; }
+I(mov_c_bit) { Cout = getbit(mem, INSTR(1)) ? 1 : 0; IncrPC_1; }
 
-I(mov_bit_c) { setbit(mem, INSTR(1), COUT); IncrPC_1; }
+I(mov_bit_c) { setbit(mem, INSTR(1), Cout); IncrPC_1; }
 
 
 

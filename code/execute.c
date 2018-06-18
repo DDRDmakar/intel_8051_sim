@@ -138,8 +138,6 @@ void snapshot_end(Memory *mem)
 void memory_to_file(Memory *mem, char *filename)
 {
 	json_t *root = json_object();
-	//json_t *program = json_array();
-	//json_t *data = json_array();
 	char* program = extvar->EPM_active ? memory_to_str(mem->PM.EPM, EPM_SIZE) : memory_to_str(mem->PM.RPM, RPM_SIZE);
 	char* data    = extvar->EDM_active ? memory_to_str(mem->DM.EDM, EDM_SIZE) : memory_to_str(mem->DM.RDM, RDM_SIZE);
 	
@@ -148,6 +146,8 @@ void memory_to_file(Memory *mem, char *filename)
 	char *result = json_dumps(root, 0);
 	write_text_file(filename, result);
 	free(result);
+	free(program);
+	free(data);
 	json_decref(root);
 }
 
