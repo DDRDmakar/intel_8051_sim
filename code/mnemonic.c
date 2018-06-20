@@ -175,13 +175,13 @@ int push_mnemonic(uint8_t storage[], const unsigned int addr, char *line)
 	{
 		case -1:
 		{
-			if (addr+1 < RPM_SIZE) extvar->breakpoints[addr+1] = -1; // Break before next instruction
+			if (addr+1 < (extvar->EPM_active ? RPM_SIZE : EPM_SIZE)) extvar->breakpoints[addr+1] = -1; // Break before next instruction
 			return 1;
 			break;
 		}
 		case -2:
 		{
-			if (addr+1 < RPM_SIZE) extvar->savepoints[addr+1] = -1; // Snapshot before next instruction
+			if (addr+1 < (extvar->EPM_active ? RPM_SIZE : EPM_SIZE)) extvar->savepoints[addr+1] = -1; // Snapshot before next instruction
 			return 1;
 			break;
 		}
@@ -210,6 +210,7 @@ int push_mnemonic(uint8_t storage[], const unsigned int addr, char *line)
 				snprintf(err, errlen, err_msg, value);
 				progstop(err, 1);
 			}
+			return 0;
 		}
 	}
 	return 0;
@@ -235,6 +236,8 @@ uint8_t get_mnemonic_from_file(char *name)
 		progstop(err, 1);
 	}
 	
+	free(name_copy);
+	
 	// Get node contents
 	uint8_t value = (uint8_t)json_integer_value(current_mnemonic); // (char*)memory_dump->children->content;
 	return value;
@@ -259,7 +262,7 @@ int32_t detect_mnemonic(char *line)
 	
 	if (line[0] != '0' && line[0] != '1' && strlen(line) < 2) error_incorrect_value(line);
 	
-	uint8_t value;
+	int32_t value;
 	
 	switch (line[0])
 	{
@@ -302,16 +305,36 @@ int32_t detect_mnemonic(char *line)
 		case '_':
 		{
 			value = 0;
-			if (strcmp(line, "_break") == 0) return -1; // Break before next instruction
-			if (strcmp(line, "_save") == 0) return -2; // Snapshot before next instruction
+			
+			char *line_copy = (char*)malloc((strlen(line) + 1) * sizeof(char));
+			MALLOC_NULL_CHECK(line_copy);
+			strcpy(line_copy, line);
+			lowercase(line_copy);
+			
+			if      (strcmp(line_copy, "_break") == 0) value = -1; // Break before next instruction
+			else if (strcmp(line_copy, "_save") == 0) value = -2; // Snapshot before next instruction
+			else error_incorrect_value(line);
+			
+			free(line_copy);
+			
 			break;
 		}
 		
 		case '^':
 		{
 			value = 0;
-			if (strcmp(line, "^break") == 0) return -3; // Break after previous instruction
-			if (strcmp(line, "^save") == 0) return -4; // Snapshot after previous instruction
+			
+			char *line_copy = (char*)malloc((strlen(line) + 1) * sizeof(char));
+			MALLOC_NULL_CHECK(line_copy);
+			strcpy(line_copy, line);
+			lowercase(line_copy);
+			
+			if      (strcmp(line_copy, "^break") == 0) value = -3; // Break after previous instruction
+			else if (strcmp(line_copy, "^save") == 0) value = -4; // Snapshot after previous instruction
+			else error_incorrect_value(line);
+			
+			free(line_copy);
+			
 			break;
 		}
 		
