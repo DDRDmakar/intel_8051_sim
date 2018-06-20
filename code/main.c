@@ -207,6 +207,7 @@ int main(int argc, char** argv)
 void setup_extvar(void)
 {
 	extvar = (Extvar*)malloc(sizeof(Extvar));
+	
 	extvar->EDM_active = 0;
 	extvar->EPM_active = 0;
 	extvar->input_file_name = NULL;
@@ -216,6 +217,7 @@ void setup_extvar(void)
 	extvar->mode = 1;
 	extvar->breakpoints = (int*)calloc(RPM_SIZE, sizeof(int)); // 0 - nothing; -1 - before; 1 - after
 	extvar->savepoints = (int*)calloc(RPM_SIZE, sizeof(int));  // 0 - nothing; -1 - before; 1 - after
+	extvar->ticks = 0;
 }
 
 void free_extvar(void)

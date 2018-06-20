@@ -1,15 +1,19 @@
 
-#ifndef __MEM__
-#define __MEM__
+#ifndef __MEM
+#define __MEM
 
 #define RPM_SIZE 4096
 #define EPM_SIZE 65536
 #define RDM_SIZE 256
 #define EDM_SIZE 65536
 
+
+#ifndef ENDIANNESS
+#error Endianness is not defined. Please define ENDIANNESS = 0 or 1
+#endif
+
 #include <stdint.h>
 
-// TODO bit addressing features (page 19)
 
 typedef struct Memory
 {
@@ -33,8 +37,15 @@ typedef struct Memory
 				uint16_t DPTR; // [82-83]
 				struct Lh
 				{
+#if ENDIANNESS == 0
 					uint8_t DPL; // [82] DPTR Data pointer low
 					uint8_t DPH; // [83] DPTR Data pointer high
+#elif ENDIANNESS == 1
+					uint8_t DPH;
+					uint8_t DPL;
+#else
+	#error Endianness is not defined. Please define ENDIANNESS = 0 or 1
+#endif
 				} LH;
 			} DPTR;
 			
@@ -62,21 +73,36 @@ typedef struct Memory
 			int64_t: 64;  //     Skip [B9-CF] 23 bytes = 184 bits
 			int64_t: 64;  //     128
 			//int64_t: 56;  //     184
+			
 			union Psw  // [D0] Program status word
 			{
 				uint8_t PSW;
 				struct Psw_bits
 				{
-					unsigned C: 1; // Флаг переноса. Устанавливается и сбрасывается аппаратно или программно при выполнении арифметических и логических операций
-					unsigned AC: 1; // Флаг вспомогательного переноса. Устанавливается и сбрасывается только аппаратно при выполнении команд сложения и вычитания и сигнализирует о переносе или займе в бите 3
-					unsigned F0: 1; // Флаг 0. Может быть установлен, сброшен или проверен программой как флаг, специфицируемый пользователем
-					unsigned RS1: 1; // Выбор банка регистров. Устанавливается и сбрасывается программно для выбора рабочего банка регистров (таблица 3)
-					unsigned RS0: 1; // --//--
-					unsigned OV: 1; // Флаг переполнения. Устанавливается и сбрасывается аппаратно при  выполнении арифметических операций
-					unsigned: 1;
+#if ENDIANNESS == 0
 					unsigned P: 1; // Флаг паритета. Устанавливается и сбрасывается аппаратно в каждом цикле и фиксирует нечётное/чётное число единичных битов в аккумуляторе, т.е. выполняет контроль по четности
+					unsigned: 1;
+					unsigned OV: 1; // Флаг переполнения. Устанавливается и сбрасывается аппаратно при  выполнении арифметических операций
+					unsigned RS0: 1; // --//--
+					unsigned RS1: 1; // Выбор банка регистров. Устанавливается и сбрасывается программно для выбора рабочего банка регистров (таблица 3)
+					unsigned F0: 1; // Флаг 0. Может быть установлен, сброшен или проверен программой как флаг, специфицируемый пользователем
+					unsigned AC: 1; // Флаг вспомогательного переноса. Устанавливается и сбрасывается только аппаратно при выполнении команд сложения и вычитания и сигнализирует о переносе или займе в бите 3
+					unsigned C: 1; // Флаг переноса. Устанавливается и сбрасывается аппаратно или программно при выполнении арифметических и логических операций
+#elif ENDIANNESS == 1
+					unsigned C: 1;
+					unsigned AC: 1;
+					unsigned F0: 1;
+					unsigned RS1: 1;
+					unsigned RS0: 1;
+					unsigned OV: 1;
+					unsigned: 1;
+					unsigned P: 1;
+#else
+	#error Endianness is not defined. Please define ENDIANNESS = 0 or 1
+#endif
 				} BITS;
 			} PSW;
+			
 			int64_t: 64;  //     Skip [D1-DF] 15 bytes = 120 bits
 			//int64_t: 56;  //     120
 			uint8_t ACC;  // [E0] Accumulator

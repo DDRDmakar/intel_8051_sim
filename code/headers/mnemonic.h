@@ -1,6 +1,6 @@
 
-#ifndef __MNEMONIC__
-#define __MNEMONIC__
+#ifndef __MNEMONIC
+#define __MNEMONIC
 
 #include <jansson.h>
 

@@ -79,7 +79,15 @@ int execute(Memory *mem)
 			struct timespec reqtime;
 			reqtime.tv_sec = 0;
 			reqtime.tv_nsec = extvar->clk * current_instruction.n_ticks * 1000000;
-			nanosleep(&reqtime, NULL);
+			
+			if (extvar->ticks)
+			{
+				for (size_t i = 0; i < current_instruction.n_ticks; ++i)
+				{
+					nanosleep(&reqtime, NULL);
+				}
+			}
+			else nanosleep(&reqtime, NULL);
 		}
 		
 		IncrPC_1;

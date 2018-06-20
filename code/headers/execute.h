@@ -1,6 +1,6 @@
 
-#ifndef __EXECUTE__
-#define __EXECUTE__
+#ifndef __EXECUTE
+#define __EXECUTE
 
 #include "memory.h"
 

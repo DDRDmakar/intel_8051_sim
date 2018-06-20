@@ -2,11 +2,18 @@
 
 CC=gcc
 DIR=../code/
-CFLAGS := -lm -Os -std=c11 -pedantic -Wextra -Wall -l jansson
+CFLAGS := -lm -Os -std=c11 -pedantic -Wextra -Wall -l jansson -D ENDIANNESS=$(ENDIANNESS)
 BIN_NAME=sim8051
 
 ifdef DEBUG
 CFLAGS := -g $(CFLAGS)
+endif
+
+# Endianness == 0 [little-endian]
+# Endianness == 1 [big-endian]
+
+ifndef ENDIANNESS
+$(error ENDIANNESS is undefined. Please define ENDIANNESS = LITTLE or ENDIANNESS = BIG.)
 endif
 
 prog: main.o mnemonic.o file.o error.o execute.o tools.o
@@ -25,7 +32,7 @@ error.o: $(DIR)error.c $(DIR)headers/error.h
 	$(CC) $(CFLAGS) -c $(DIR)error.c
 
 execute.o: $(DIR)execute.c $(DIR)headers/execute.h $(DIR)instructions.c $(DIR)headers/extvar.h $(DIR)headers/memory.h $(DIR)headers/error.h $(DIR)headers/file.h $(DIR)headers/mnemonic.h
-	$(CC) $(CFLAGS) -D _POSIX_C_SOURCE=200809L -c $(DIR)execute.c
+	$(CC) $(CFLAGS) -D _POSIX_C_SOURCE=200809L  -c $(DIR)execute.c
 
 tools.o: $(DIR)tools.c $(DIR)headers/tools.h
 	$(CC) $(CFLAGS) -c $(DIR)tools.c

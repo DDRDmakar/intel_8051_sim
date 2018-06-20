@@ -1,6 +1,6 @@
 
-#ifndef __ERROR__
-#define __ERROR__
+#ifndef __ERROR
+#define __ERROR
 
 void progstop(const char *message, const int errcode);
 void progerr(const char *message);

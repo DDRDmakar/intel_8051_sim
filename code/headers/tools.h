@@ -1,6 +1,6 @@
 
-#ifndef __TOOLS__
-#define __TOOLS__
+#ifndef __TOOLS
+#define __TOOLS
 
 int is_udec_num(char *line);
 int is_ubin_num(char *line);

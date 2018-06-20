@@ -1,6 +1,6 @@
 
-#ifndef __EXTVAR__
-#define __EXTVAR__
+#ifndef __EXTVAR
+#define __EXTVAR
 
 typedef struct Extvar
 {
@@ -11,7 +11,8 @@ typedef struct Extvar
 		debug,
 		mode, // 0 - bin; 1 - text;
 		verbose,
-		produce_file;
+		produce_file,
+		ticks;
 	char
 		*CWD,
 		*input_file_name,

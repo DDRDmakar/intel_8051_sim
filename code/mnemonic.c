@@ -257,7 +257,7 @@ int32_t detect_mnemonic(char *line)
 		return 0; // NOP
 	}
 	
-	if (line[0] != 0 && line[0] != 1 && strlen(line) < 2) error_incorrect_value(line);
+	if (line[0] != '0' && line[0] != '1' && strlen(line) < 2) error_incorrect_value(line);
 	
 	uint8_t value;
 	
