@@ -174,7 +174,17 @@ void snapshot(Memory *mem)
 	tm_info = localtime(&timer);
 	strftime(timebuffer, sizeof(timebuffer)/sizeof(char), "%Y_%m_%d__%H_%M_%S", tm_info);
 	
-	snprintf(buffer, buffer_len, "%s__%d__%s", timebuffer, snapshot_counter, extvar->output_file_name);
+	char *last_slash_ptr = strrchr(extvar->output_file_name, '/');
+	
+	// Allocate string for directory name
+	size_t output_file_rel_dir_len = strlen(extvar->output_file_name) + 1;
+	char *output_file_rel_dir = (char*)malloc(output_file_rel_dir_len * sizeof(char));
+	MALLOC_NULL_CHECK(output_file_rel_dir);
+	strncpy(output_file_rel_dir, extvar->output_file_name, output_file_rel_dir_len);
+	if (last_slash_ptr) output_file_rel_dir[last_slash_ptr - extvar->output_file_name + 1] = '\0'; // Cut symbols after last slash
+	else output_file_rel_dir[0] = '\0';
+	
+	snprintf(buffer, buffer_len, "%s%s__%d__%s", output_file_rel_dir, timebuffer, snapshot_counter, (last_slash_ptr ? last_slash_ptr+1 : extvar->output_file_name));
 	
 	if (extvar->debug)
 	{
@@ -190,6 +200,7 @@ void snapshot(Memory *mem)
 	memory_to_file(mem, buffer);
 	
 	free(buffer);
+	free(output_file_rel_dir);
 	
 	++snapshot_counter;
 }
