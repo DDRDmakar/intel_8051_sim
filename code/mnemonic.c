@@ -13,7 +13,7 @@ json_t *mnemo;
 
 void fill_memory(uint8_t *storage, char ***storage_str, const char *line, const unsigned int memory_size);
 void push_word(char **storage, const unsigned int addr, char *line);
-int push_mnemonic(uint8_t storage[], const unsigned int addr, char *line);
+int push_mnemonic(uint8_t *storage, const unsigned int addr, char *line);
 uint8_t get_mnemonic_from_file(char *name);
 int32_t detect_mnemonic(char *line);
 
@@ -168,7 +168,7 @@ void push_word(char **storage, const unsigned int addr, char *line)
 	storage[addr] = newline;
 }
 
-int push_mnemonic(uint8_t storage[], const unsigned int addr, char *line)
+int push_mnemonic(uint8_t *storage, const unsigned int addr, char *line)
 {
 	int32_t value = detect_mnemonic(line);
 	switch (value)
