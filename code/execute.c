@@ -11,6 +11,7 @@
 #include "headers/memory.h"
 #include "headers/error.h"
 #include "headers/file.h"
+#include "headers/tools.h"
 #include "headers/mnemonic.h"
 #include "instructions.c"
 
@@ -47,8 +48,6 @@ int execute(Memory *mem)
 		
 		if (extvar->debug && extvar->verbose)
 		{
-			printf("[PC 0x%04x]: 0x%02x (%s)\n", (unsigned int)tpc, mem->PM.EPM[tpc], mem->PM_str[tpc]);
-			
 			if (
 				(current_instruction.n_bytes >= 1 && tpc+0 < prog_memory_size && extvar->breakpoints[tpc+0] == -1) ||
 				(current_instruction.n_bytes >= 2 && tpc+1 < prog_memory_size && extvar->breakpoints[tpc+1] == -1) ||
@@ -59,6 +58,8 @@ int execute(Memory *mem)
 				(current_instruction.n_bytes >= 2 && tpc+1 < prog_memory_size && extvar->savepoints[tpc+1] == -1) ||
 				(current_instruction.n_bytes == 3 && tpc+2 < prog_memory_size && extvar->savepoints[tpc+2] == -1)
 			) snapshot(mem);
+			
+			printf("[PC 0x%04x]: 0x%02x (%s)\n", (unsigned int)tpc, mem->PM.EPM[tpc], mem->PM_str[tpc]);
 		}
 		
 		/* ============ */
@@ -117,12 +118,38 @@ int execute(Memory *mem)
 	return 0;
 }
 
+
+// 'p' or 'd' + 4 symbols for hex + \n + next symbol + \0
+#define BREAKPOINT_BUFFER_LEN 8
+
 void breakpoint(Memory *mem)
 {
-	(void)mem;
-	printf("========> BREAKPOINT. Press Enter to continue");
-	char enter = 0;
-	while (enter != '\r' && enter != '\n') { enter = getchar(); }
+	char buffer[BREAKPOINT_BUFFER_LEN];
+	printf("========> BREAKPOINT: ");
+	
+	while (1)
+	{
+		if (!fgets(buffer, BREAKPOINT_BUFFER_LEN, stdin)) break;
+		
+		if (strlen(buffer) == 0 || (strlen(buffer) == 1 && buffer[0] == '\n')) break;
+		if (buffer[strlen(buffer) - 1] == '\n') buffer[strlen(buffer) - 1] = '\0';
+		
+		char first = buffer[0];
+		// p - program memory
+		// d - data memory
+		if ((first == 'p' || first == 'd') && strlen(buffer) > 1 && strlen(buffer) <= 5 && is_uhex_num(&buffer[1]))
+		{
+			size_t maxaddr = 
+				first == 'p' ? 
+				(extvar->EPM_active ? EPM_SIZE : RPM_SIZE) : 
+				(extvar->EDM_active ? EDM_SIZE : RDM_SIZE);
+			
+			uint32_t addr = strtoul(&buffer[1], NULL, 16);
+			if (addr < maxaddr) printf("value 0x%02x\n", (first == 'p' ? mem->PM.EPM[addr] : mem->DM.EDM[addr]));
+			else printf("Error - address is too big. Try again: ");
+		}
+		else printf("Error - wrong address. Try again: ");
+	}
 }
 
 void snapshot(Memory *mem)

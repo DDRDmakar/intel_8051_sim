@@ -75,8 +75,8 @@ void setup_memory(Memory *mem)
 	
 	free(root);
 	
-	// Начальное значение
-	mem->DM.RDM_REG.SP = 0x07;
+	// Начальное значение, если оно не было задано через файл
+	if (mem->DM_str[0x81] == NULL) mem->DM.RDM_REG.SP = 0x07;
 }
 
 void fill_memory(uint8_t *storage, char ***storage_str, const char *line, const unsigned int memory_size)
@@ -173,26 +173,38 @@ int push_mnemonic(uint8_t storage[], const unsigned int addr, char *line)
 	int32_t value = detect_mnemonic(line);
 	switch (value)
 	{
-		case -1:
+		case -1: // _BREAK I
 		{
-			if (addr+1 < (extvar->EPM_active ? RPM_SIZE : EPM_SIZE)) extvar->breakpoints[addr+1] = -1; // Break before next instruction
+#ifdef _DEBUGINFO
+printf("Adding breakpoint before 0x%4x\n", addr);
+#endif
+			if (addr < (extvar->EPM_active ? RPM_SIZE : EPM_SIZE)) extvar->breakpoints[addr] = -1; // Break before next instruction
 			return 1;
 			break;
 		}
-		case -2:
+		case -2: // _SAVE I
 		{
-			if (addr+1 < (extvar->EPM_active ? RPM_SIZE : EPM_SIZE)) extvar->savepoints[addr+1] = -1; // Snapshot before next instruction
+#ifdef _DEBUGINFO
+printf("Adding savepoint before 0x%4x\n", addr);
+#endif
+			if (addr < (extvar->EPM_active ? RPM_SIZE : EPM_SIZE)) extvar->savepoints[addr] = -1; // Snapshot before next instruction
 			return 1;
 			break;
 		}
-		case -3:
+		case -3: // I ^BREAK
 		{
+#ifdef _DEBUGINFO
+printf("Adding breakpoint after 0x%4x\n", addr-1);
+#endif
 			if (addr != 0) extvar->breakpoints[addr-1] = 1; // Break after previous instruction
 			return 1;
 			break;
 		}
-		case -4:
+		case -4: // I ^SAVE
 		{
+#ifdef _DEBUGINFO
+printf("Adding savepoint after 0x%4x\n", addr-1);
+#endif
 			if (addr != 0) extvar->savepoints[addr-1] = 1; // Snapshot after previous instruction
 			return 1;
 			break;

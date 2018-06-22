@@ -9,6 +9,7 @@
 		mov_r2_d *55
 		ADD_A_AD 0111      _SAVE
 		MOV_ad_d #20 #88
+		^break
 	",
 	"data":
 	"

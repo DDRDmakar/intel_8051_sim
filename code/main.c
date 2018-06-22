@@ -184,16 +184,16 @@ int main(int argc, char** argv)
 	if (extvar->output_file_name == NULL) extvar->output_file_name = "memory.json";
 	if (extvar->input_file_name == NULL) progstop("Error - input file name is not set." ,1);;
 	
-#ifdef _DEBUGINFO_
+#ifdef _DEBUGINFO
 	printf("STRUCTURE OF EXTVAR:\n\tEPM\t%d\n\tEDM\t%d\n\tclk\t%d\n\tdebug\t%d\n\tmode\t%d\n\tverbose\t%d\n\tproduce_file\t%d\n\tlocation\t%s\n\toutput file name\t%s\n\tinput file name\t%s\n",
-		extvar->EPM_active, extvar->EDM_active, extvar->clk, extvar->debug, extvar->mode, extvar->verbose, extvar->produce_file, extvar->location, extvar->output_file_name, extvar->input_file_name
+		extvar->EPM_active, extvar->EDM_active, extvar->clk, extvar->debug, extvar->mode, extvar->verbose, extvar->produce_file, extvar->CWD, extvar->output_file_name, extvar->input_file_name
 	);
 #endif
 	
 	Memory m;
 	m.PC = 0;
 	
-#ifdef _DEBUGINFO_
+#ifdef _DEBUGINFO
 	// MEMORY TEST
 	for (uint16_t i = 0; i < 256; ++i) {m.DM.EDM[i] = i;}
 	//m.DM.RDM.ACC = 36;
@@ -237,6 +237,7 @@ void setup_extvar(void)
 	extvar->EPM_active = 0;
 	extvar->input_file_name = NULL;
 	extvar->output_file_name = NULL;
+	extvar->CWD = NULL;
 	extvar->debug = 0;
 	extvar->verbose = 0;
 	extvar->mode = 1;
