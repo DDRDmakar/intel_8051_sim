@@ -16,11 +16,14 @@ typedef struct Extvar
 	char
 		*CWD,
 		*input_file_name,
-		*output_file_name;
-	
+		*output_file_name,
+		*binary_location,
+		*resources_location;
 	int 
 		*breakpoints,  // 0 - nothing; -1 - before; 1 - after
 		*savepoints;   // 0 - nothing; -1 - before; 1 - after
+	int32_t
+		endpoint;
 } Extvar;
 
 extern Extvar *extvar;

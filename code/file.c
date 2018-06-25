@@ -8,7 +8,7 @@
 #include "headers/error.h"
 #include "headers/extvar.h"
 
-char *read_text_file(const char *filename)
+char *read_text_file_internal(const char *filename)
 {
 	// declare a file pointer
 	FILE *infile = fopen(filename, "r");
@@ -37,7 +37,7 @@ char *read_text_file(const char *filename)
 	return buffer;
 }
 
-uint8_t *read_bin_file(const char *filename)
+uint8_t *read_bin_file_internal(uint8_t *destination, const size_t maxlength, const char *filename)
 {
 	// declare a file pointer
 	FILE *infile = fopen(filename, "rb");
@@ -47,78 +47,113 @@ uint8_t *read_bin_file(const char *filename)
 	
 	// Get the number of bytes
 	fseek(infile, 0L, SEEK_END);
-	long numbytes = ftell(infile);
+	size_t numbytes = ftell(infile);
+	
+	// Check length limit
+	if (maxlength < numbytes) numbytes = maxlength;
 	
 	// reset the file position indicator to the beginning of the file
-	fseek(infile, 0L, SEEK_SET);	
-	
-	// grab sufficient memory for the buffer to hold the text
-	uint8_t *buffer = (uint8_t*)malloc(numbytes * sizeof(uint8_t));
-	
-	// memory error
-	if (!buffer) progstop("Error allocating memory (binary file buffer)", 1);
+	fseek(infile, 0L, SEEK_SET);
 	
 	// copy all the text into the buffer
-	fread(buffer, sizeof(uint8_t), numbytes, infile);
+	fread(destination, sizeof(uint8_t), numbytes, infile);
 	fclose(infile);
 	
 	// return buffer
-	return buffer;
+	return destination;
 }
 
-char *read_text_file_resources(const char *filename)
-{
-	char *str_resources = "resources/";
-	const size_t namelen = strlen(extvar->CWD) + strlen(str_resources) + strlen(filename) + 1;
-	char *newfilename = (char*)malloc(namelen * sizeof(char));
-	MALLOC_NULL_CHECK(newfilename);
-	snprintf(newfilename, namelen, "%s%s%s", extvar->CWD, str_resources, filename);
-	return read_text_file(newfilename);
-}
-
-uint8_t *read_bin_file_resources(const char *filename)
-{
-	char *str_resources = "resources/";
-	const size_t namelen = strlen(extvar->CWD) + strlen(str_resources) + strlen(filename) + 1;
-	char *newfilename = (char*)malloc(namelen * sizeof(char));
-	MALLOC_NULL_CHECK(newfilename);
-	snprintf(newfilename, namelen, "%s%s%s", extvar->CWD, str_resources, filename);
-	return read_bin_file(newfilename);
-}
-
-void write_text_file(const char *filename, const char *str)
+void write_text_file_internal(const char *filename, const char *str)
 {
 	FILE *outfile = fopen(filename, "w");
 	if(!outfile) progstop("Error creating file!\n", 1);
-	fprintf(outfile, "%s\n", str);
+	fprintf(outfile, "%s", str);
 	fclose(outfile);
 }
 
-void write_bin_file(const char *filename, const uint8_t *buffer, const size_t len)
+void write_bin_file_internal(const char *filename, const uint8_t *buffer, const size_t len)
 {
 	FILE *outfile = fopen(filename, "wb");
 	if(!outfile) progstop("Error creating file!\n", 1);
-	//fprintf(outfile, "%s\n", str);
 	fwrite(buffer, sizeof(uint8_t), len, outfile);
 	fclose(outfile);
 }
 
+//=====================================================================================//
+//=====================================================================================//
+//=====================================================================================//
+//=====================================================================================//
+
+#define READ_TEXT_FILE_AFTER(x) \
+	const size_t namelen = strlen(x) + strlen(filename) + 1; \
+	char *newfilename = (char*)malloc(namelen * sizeof(char)); \
+	MALLOC_NULL_CHECK(newfilename); \
+	snprintf(newfilename, namelen, "%s%s", (x), filename); \
+	char *result = read_text_file_internal(newfilename); \
+	free(newfilename); \
+	return result;
+
+char *read_text_file_cwd(const char *filename)
+{
+	READ_TEXT_FILE_AFTER(extvar->CWD);
+}
+
+char *read_text_file_resources(const char *filename)
+{
+	READ_TEXT_FILE_AFTER(extvar->resources_location);
+}
+
+#define READ_BIN_FILE_AFTER(x) \
+	const size_t namelen = strlen(x) + strlen(filename) + 1; \
+	char *newfilename = (char*)malloc(namelen * sizeof(char)); \
+	MALLOC_NULL_CHECK(newfilename); \
+	snprintf(newfilename, namelen, "%s%s", (x), filename); \
+	uint8_t *result = read_bin_file_internal(destination, maxlength, newfilename); \
+	free(newfilename); \
+	return result;
+
+uint8_t *read_bin_file_cwd(uint8_t *destination, const size_t maxlength, const char *filename)
+{
+	READ_BIN_FILE_AFTER(extvar->CWD);
+}
+
+uint8_t *read_bin_file_resources(uint8_t *destination, const size_t maxlength, const char *filename)
+{
+	READ_BIN_FILE_AFTER(extvar->resources_location);
+}
+
+#define WRITE_TEXT_FILE_AFTER(x) \
+	const size_t namelen = strlen(x) + strlen(filename) + 1; \
+	char *newfilename = (char*)malloc(namelen * sizeof(char)); \
+	MALLOC_NULL_CHECK(newfilename); \
+	snprintf(newfilename, namelen, "%s%s", (x), filename); \
+	write_text_file_internal(newfilename, str); \
+	free(newfilename);
+
+void write_text_file_cwd(const char *filename, const char *str)
+{
+	WRITE_TEXT_FILE_AFTER(extvar->CWD);
+}
+
 void write_text_file_resources(const char *filename, const char *str)
 {
-	char *str_resources = "resources/";
-	const size_t namelen = strlen(extvar->CWD) + strlen(str_resources) + strlen(filename) + 1;
-	char *newfilename = (char*)malloc(namelen * sizeof(char));
-	MALLOC_NULL_CHECK(newfilename);
-	snprintf(newfilename, namelen, "%s%s%s", extvar->CWD, str_resources, filename);
-	write_text_file(newfilename, str);
+	WRITE_TEXT_FILE_AFTER(extvar->resources_location);
+}
+
+#define WRITE_BIN_FILE_AFTER(x) \
+	const size_t namelen = strlen(x) + strlen(filename) + 1; \
+	char *newfilename = (char*)malloc(namelen * sizeof(char)); \
+	MALLOC_NULL_CHECK(newfilename); \
+	snprintf(newfilename, namelen, "%s%s", (x), filename); \
+	write_bin_file_internal(newfilename, buffer, len); \
+	free(newfilename);
+
+void write_bin_file_cwd(const char *filename, const uint8_t *buffer, const size_t len)
+{
+	WRITE_BIN_FILE_AFTER(extvar->CWD);
 }
 
 void write_bin_file_resources(const char *filename, const uint8_t *buffer, const size_t len)
 {
-	char *str_resources = "resources/";
-	const size_t namelen = strlen(extvar->CWD) + strlen(str_resources) + strlen(filename) + 1;
-	char *newfilename = (char*)malloc(namelen * sizeof(char));
-	MALLOC_NULL_CHECK(newfilename);
-	snprintf(newfilename, namelen, "%s%s%s", extvar->CWD, str_resources, filename);
-	write_bin_file(newfilename, buffer, len);
+	WRITE_BIN_FILE_AFTER(extvar->resources_location);
 }

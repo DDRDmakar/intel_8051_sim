@@ -462,25 +462,23 @@ I(cjne_rdm_d_rel) { Cout = DATAMEM[Ri] < INSTR(1) ? 1 : 0; JMP_IF(2, DATAMEM[Ri]
 
 I(lcall_ad16)
 {
-	mem->PC += 3;
-	DATAMEM[++FUNREGS.SP] = (uint8_t)(mem->PC & 0x00FF); 
-	DATAMEM[++FUNREGS.SP] = (uint8_t)((mem->PC & 0xFF00) >> 8); 
+	DATAMEM[++FUNREGS.SP] = (uint8_t)((mem->PC+3) & 0x00FF); 
+	DATAMEM[++FUNREGS.SP] = (uint8_t)(((mem->PC+3) & 0xFF00) >> 8); 
 	mem->PC = (uint16_t)INSTR(1) << 8 | INSTR(2);
 	DecPC_1;
 }
 
 I(acall_ad11)
 {
-	mem->PC += 2;
-	DATAMEM[++FUNREGS.SP] = (uint8_t)(mem->PC & 0x00FF); 
-	DATAMEM[++FUNREGS.SP] = (uint8_t)((mem->PC & 0xFF00) >> 8); 
-	mem->PC = (mem->PC & 0xF800) | INSTR(1) | (uint16_t)(INSTR(0) & 0xE0) << 3;
+	DATAMEM[++FUNREGS.SP] = (uint8_t)((mem->PC+2) & 0x00FF); 
+	DATAMEM[++FUNREGS.SP] = (uint8_t)(((mem->PC+2) & 0xFF00) >> 8); 
+	mem->PC = ((mem->PC+2) & 0xF800) | INSTR(1) | (uint16_t)(INSTR(0) & 0xE0) << 3;
 	DecPC_1;
 }
 
 I(ret) 
 {
-	mem->PC = ((uint16_t)DATAMEM[FUNREGS.SP] << 8) | (uint16_t)DATAMEM[FUNREGS.SP - 1]; 
+	if (FUNREGS.SP) mem->PC = ((uint16_t)DATAMEM[FUNREGS.SP] << 8) | (uint16_t)DATAMEM[FUNREGS.SP - 1]; 
 	FUNREGS.SP -= 2;
 	DecPC_1;
 }

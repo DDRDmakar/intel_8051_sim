@@ -7,21 +7,21 @@
 #include "headers/error.h"
 #include "headers/extvar.h"
 #include "headers/tools.h"
+#include "headers/defines.h"
 
 json_t *mnemo;
 
 
-void fill_memory(uint8_t *storage, char ***storage_str, const char *line, const unsigned int memory_size);
+uint32_t fill_memory(uint8_t *storage, char ***storage_str, const char *line, const unsigned int memory_size);
 void push_word(char **storage, const unsigned int addr, char *line);
 int push_mnemonic(uint8_t *storage, const unsigned int addr, char *line);
 uint8_t get_mnemonic_from_file(char *name);
 int32_t detect_mnemonic(char *line);
 
-
-void setup_memory(Memory *mem)
+void setup_memory_text(Memory *mem)
 {
 	// Get JSON object of memory
-	char *str_state = read_text_file(extvar->input_file_name);
+	char *str_state = read_text_file_cwd(extvar->input_file_name);
 	if (str_state == NULL)
 	{
 		const char *err_msg = "Error opening memory file \"%s\"";
@@ -54,11 +54,14 @@ void setup_memory(Memory *mem)
 	char *plain_text = (char*)json_string_value(memory_dump);
 	if (plain_text == NULL)
 		progstop("Error - getting \"program\" node contents", 1);
+	
+	uint32_t after_last_address;
 	if (extvar->EPM_active)
-		fill_memory(mem->PM.EPM, &mem->PM_str, plain_text, EPM_SIZE);
+		after_last_address = fill_memory(mem->PM.EPM, &mem->PM_str, plain_text, EPM_SIZE);
 	else
-		fill_memory(mem->PM.RPM, &mem->PM_str, plain_text, RPM_SIZE);
+		after_last_address = fill_memory(mem->PM.RPM, &mem->PM_str, plain_text, RPM_SIZE);
 	free(plain_text);
+	if (extvar->endpoint == -1) extvar->endpoint = after_last_address;
 	
 	// DATA
 	memory_dump = json_object_get(root, "data");
@@ -79,7 +82,7 @@ void setup_memory(Memory *mem)
 	if (mem->DM_str[0x81] == NULL) mem->DM.RDM_REG.SP = 0x07;
 }
 
-void fill_memory(uint8_t *storage, char ***storage_str, const char *line, const unsigned int memory_size)
+uint32_t fill_memory(uint8_t *storage, char ***storage_str, const char *line, const unsigned int memory_size)
 //void parse_words(char ***storage, const char *line, const unsigned int memory_size)
 {
 	const unsigned int len = strlen(line);
@@ -157,6 +160,8 @@ void fill_memory(uint8_t *storage, char ***storage_str, const char *line, const 
 			break;
 		}
 	}
+	
+	return memory_address; // After last instruction
 }
 
 void push_word(char **storage, const unsigned int addr, char *line)
@@ -370,31 +375,24 @@ void lowercase(char *line)
 
 void setup_mnemonics_alphabet(void)
 {
-	/*
-	 * Allocate:
-	 * length of path to binary + 
-	 * length of resource name
-	 */
-	const char *resource_name_str = "resources/mnemonics.json";
-	const size_t filename_len = strlen(extvar->CWD) + strlen(resource_name_str) + 1;
-	char *filename = (char*)malloc(filename_len * sizeof(char));
-	MALLOC_NULL_CHECK(filename);
-	snprintf(filename, filename_len, "%s%s", extvar->CWD, resource_name_str);
+	const char *filename = "mnemonics.json";
+	const size_t config_location_len = strlen(extvar->resources_location) + strlen(filename) + 1;
+	char *config_location = (char*)malloc(config_location_len * sizeof(char));
+	MALLOC_NULL_CHECK(config_location);
+	snprintf(config_location, config_location_len, "%s%s", extvar->resources_location, filename);
 	
 	json_error_t error;
-	mnemo = json_load_file(filename, 0, &error);
+	mnemo = json_load_file(config_location, 0, &error);
 	
 	if (mnemo == NULL) 
 	{
 		const char *err_msg = "Error opening mnemonics config file \"%s\"";
-		const size_t errlen = strlen(err_msg) + strlen(filename) + 1;
+		const size_t errlen = strlen(err_msg) + strlen(config_location) + 1;
 		char *err = (char*)malloc(errlen * sizeof(char));
 		MALLOC_NULL_CHECK(err);
-		snprintf(err, errlen, err_msg, filename);
+		snprintf(err, errlen, err_msg, config_location);
 		progstop(err, 1);
 	}
-	
-	free(filename);
 }
 
 void free_mnemonics_alphabet(void)
