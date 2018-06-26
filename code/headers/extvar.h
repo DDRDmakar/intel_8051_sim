@@ -11,6 +11,8 @@ typedef struct Extvar
 		debug,
 		mode, // 0 - bin; 1 - text;
 		verbose,
+		step,
+		enable_breakpoints,
 		produce_file,
 		ticks;
 	char

@@ -115,9 +115,11 @@ int execute(Memory *mem)
 			if (extvar->verbose)
 			{
 				if (
-					(current_instruction.n_bytes >= 1 && tpc+0 < prog_memory_size && extvar->breakpoints[tpc+0] == 1) ||
-					(current_instruction.n_bytes >= 2 && tpc+1 < prog_memory_size && extvar->breakpoints[tpc+1] == 1) ||
-					(current_instruction.n_bytes == 3 && tpc+2 < prog_memory_size && extvar->breakpoints[tpc+2] == 1)
+					extvar->step || (extvar->enable_breakpoints && (
+						(current_instruction.n_bytes >= 1 && tpc+0 < prog_memory_size && extvar->breakpoints[tpc+0] == 1) ||
+						(current_instruction.n_bytes >= 2 && tpc+1 < prog_memory_size && extvar->breakpoints[tpc+1] == 1) ||
+						(current_instruction.n_bytes == 3 && tpc+2 < prog_memory_size && extvar->breakpoints[tpc+2] == 1)
+					))
 				) breakpoint(mem);
 				
 				struct timespec reqtime;
@@ -145,7 +147,7 @@ int execute(Memory *mem)
 void breakpoint(Memory *mem)
 {
 	char buffer[BREAKPOINT_BUFFER_LEN];
-	printf("========> BREAKPOINT: ");
+	if (!extvar->step) printf("========> BREAKPOINT: ");
 	
 	while (1)
 	{
@@ -157,6 +159,14 @@ void breakpoint(Memory *mem)
 		char first = buffer[0];
 		// p - program memory
 		// d - data memory
+		
+		// Make snapshot
+		if (!strcmp(buffer, "save"))
+		{
+			snapshot(mem);
+			continue;
+		}
+		
 		if ((first == 'p' || first == 'd') && strlen(buffer) > 1 && strlen(buffer) <= 5 && is_uhex_num(&buffer[1]))
 		{
 			size_t maxaddr = 

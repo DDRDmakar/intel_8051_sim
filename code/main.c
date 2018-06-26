@@ -78,6 +78,8 @@ int main(int argc, char** argv)
 				else if (!strcmp(argv[i], "--outfile")) goto ref_flag_outfile;
 				else if (!strcmp(argv[i], "--clk"))     goto ref_flag_clk;
 				else if (!strcmp(argv[i], "--verbose")) extvar->verbose = 1;
+				else if (!strcmp(argv[i], "--step")) extvar->step = 1;
+				else if (!strcmp(argv[i], "--nobreak")) extvar->enable_breakpoints = 0;
 				else if (!strcmp(argv[i], "--mode"))  goto ref_flag_mode;
 				else if (!strcmp(argv[i], "--end"))   goto ref_flag_end;
 				else if (!strcmp(argv[i], "--break")) goto ref_flag_break;
@@ -332,6 +334,8 @@ void setup_extvar(void)
 	MALLOC_NULL_CHECK(extvar->savepoints);
 	extvar->ticks = 0;
 	extvar->endpoint = -1;
+	extvar->step = 0;
+	extvar->enable_breakpoints = 1;
 }
 
 void free_extvar(void)
