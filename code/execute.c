@@ -68,11 +68,11 @@ int execute(Memory *mem)
 			
 			if (extvar->verbose)
 			{
-				if (
+				if (extvar->enable_breakpoints && (
 					(current_instruction.n_bytes >= 1 && tpc+0 < prog_memory_size && extvar->breakpoints[tpc+0] == -1) ||
 					(current_instruction.n_bytes >= 2 && tpc+1 < prog_memory_size && extvar->breakpoints[tpc+1] == -1) ||
 					(current_instruction.n_bytes == 3 && tpc+2 < prog_memory_size && extvar->breakpoints[tpc+2] == -1)
-				) breakpoint(mem);
+				)) breakpoint(mem);
 				
 				switch (current_instruction.n_bytes)
 				{
