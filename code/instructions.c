@@ -162,7 +162,7 @@ I(mov_rn_d) { Rn = INSTR(1); IncrPC_1; }
 
 I(mov_ad_a) { DATAMEM[INSTR(1)] = ACCUM; IncrPC_1; }
 
-I(mov_ad_rn) { Rn = DATAMEM[INSTR(1)]; }
+I(mov_ad_rn) { Rn = DATAMEM[INSTR(1)]; IncrPC_1; }
 
 I(mov_add_ads) { DATAMEM[INSTR(1)] = DATAMEM[INSTR(2)]; IncrPC_2; }
 
@@ -478,7 +478,7 @@ I(acall_ad11)
 
 I(ret) 
 {
-	if (FUNREGS.SP) mem->PC = ((uint16_t)DATAMEM[FUNREGS.SP] << 8) | (uint16_t)DATAMEM[FUNREGS.SP - 1]; 
+	mem->PC = ((uint16_t)DATAMEM[FUNREGS.SP] << 8) | (uint16_t)DATAMEM[FUNREGS.SP - 1]; 
 	FUNREGS.SP -= 2;
 	DecPC_1;
 }
