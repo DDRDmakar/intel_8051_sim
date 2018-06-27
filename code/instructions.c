@@ -162,7 +162,7 @@ I(mov_rn_d) { Rn = INSTR(1); IncrPC_1; }
 
 I(mov_ad_a) { DATAMEM[INSTR(1)] = ACCUM; IncrPC_1; }
 
-I(mov_ad_rn) { Rn = DATAMEM[INSTR(1)]; IncrPC_1; }
+I(mov_ad_rn) { DATAMEM[INSTR(1)] = Rn; IncrPC_1; }
 
 I(mov_add_ads) { DATAMEM[INSTR(1)] = DATAMEM[INSTR(2)]; IncrPC_2; }
 
@@ -240,19 +240,34 @@ I(xchd_a_rdm)
 
 */
 
+#define ADD(a, b) \
+	Cout = ((uint16_t)(a) + (b) + Cout > 0x00FF) ? 1 : 0; \
+	PSWBITS.AC = (((a) & 0x0F) + ((b) & 0x0F)) > 0x0F ? 1 : 0; \
+	PSWBITS.OV = \
+	(                                                     \
+		(((a) & 0x7F) + ((b) & 0x7F) > 0x7F && !(Cout)) || \
+		(((a) & 0x7F) + ((b) & 0x7F) <= 0x7F && (Cout))    \
+	) ? 1 : 0;                                            \
+	(a) += (b);
+
 #define ADDC(a, b, c) \
-	Cout = ((uint16_t)a + b + c > 0x00FF) ? 1 : 0; \
-	PSWBITS.AC = ((a & 0x0F) + (b & 0x0F) + (c & 0x0F) > 0x0F) ? 1 : 0; \
-	PSWBITS.OV = ((a & 0x7F) + (b & 0x7F) + (c & 0x7F) > 0x7F) ? 1 : 0; \
-	a += b + c; \
+	unsigned new_c = ((uint16_t)(a) + (b) + (c) > 0x00FF) ? 1 : 0; \
+	PSWBITS.AC = (((a) & 0x0F) + ((b) & 0x0F) + ((c) & 0x0F) > 0x0F) ? 1 : 0; \
+	PSWBITS.OV = \
+	(                                                                    \
+		(((a) & 0x7F) + ((b) & 0x7F) + ((c) & 0x7F) > 0x7F && !new_c) || \
+		(((a) & 0x7F) + ((b) & 0x7F) + ((c) & 0x7F) <= 0x7F && new_c)    \
+	) ? 1 : 0;                                                           \
+	(a) += (b + c); \
+	(c) = new_c;
 
-I(add_a_rn) { ADDC(ACCUM, Rn, 0); }
+I(add_a_rn) { ADD(ACCUM, Rn); }
 
-I(add_a_ad) { ADDC(ACCUM, DATAMEM[INSTR(1)], 0); IncrPC_1; }
+I(add_a_ad) { ADD(ACCUM, DATAMEM[INSTR(1)]); IncrPC_1; }
 
-I(add_a_rdm) { ADDC(ACCUM, DATAMEM[Ri], 0); }
+I(add_a_rdm) { ADD(ACCUM, DATAMEM[Ri]); }
 
-I(add_a_d) { ADDC(ACCUM, INSTR(1), 0); IncrPC_1; }
+I(add_a_d) { ADD(ACCUM, INSTR(1)); IncrPC_1; }
 
 I(addc_a_rn) { ADDC(ACCUM, Rn, Cout); }
 
@@ -278,10 +293,15 @@ I(da_a) // Десятичная коррекция аккумулятора
 
 
 #define SUBB(a, b, c) \
-	Cout = a < (b + c) ? 1 : 0; \
-	PSWBITS.AC = (a & 0x0F) < (b & 0x0F) + (c & 0x0F) ? 1 : 0; \
-	PSWBITS.OV = (a & 0x7F) < (b & 0x7F) + (c & 0x7F) ? 1 : 0; \
-	a -= b + c; \
+	unsigned new_c = (a) < ((uint16_t)(b) + (c)) ? 1 : 0; \
+	PSWBITS.AC = ((a) & 0x0F) < ((b) & 0x0F) + ((c) & 0x0F) ? 1 : 0; \
+	PSWBITS.OV = \
+	(                                                             \
+		(((a) & 0x7F) < ((b) & 0x7F) + ((c) & 0x7F) && !new_c) || \
+		(((a) & 0x7F) >= ((b) & 0x7F) + ((c) & 0x7F) && new_c)    \
+	) ? 1 : 0;                                                    \
+	(a) -= (b + c); \
+	(c) = new_c;
 
 I(subb_a_rn) { SUBB(ACCUM, Rn, Cout); }
 
@@ -292,23 +312,23 @@ I(subb_a_rdm) { SUBB(ACCUM, DATAMEM[Ri], Cout); }
 I(subb_a_d) { SUBB(ACCUM, INSTR(1), Cout); IncrPC_1; }
 
 
-I(inc_a) { ++(ACCUM); }
+I(inc_a) { ++ACCUM; }
 
-I(inc_rn) { ++(Rn); }
+I(inc_rn) { ++Rn; }
 
-I(inc_ad) { ++( DATAMEM[INSTR(1)] ); IncrPC_1; }
+I(inc_ad) { ++DATAMEM[INSTR(1)]; IncrPC_1; }
 
-I(inc_rdm) { ++( DATAMEM[Ri] ); }
+I(inc_rdm) { ++DATAMEM[Ri]; }
 
-I(inc_dptr) { ++(FUNREGS.DPTR.DPTR); }
+I(inc_dptr) { ++FUNREGS.DPTR.DPTR; }
 
 I(dec_a) { --ACCUM; }
 
 I(dec_rn) { --Rn; }
 
-I(dec_ad) { --( DATAMEM[INSTR(1)] ); IncrPC_1; }
+I(dec_ad) { --DATAMEM[INSTR(1)]; IncrPC_1; }
 
-I(dec_rdm) { --( DATAMEM[Ri] ); }
+I(dec_rdm) { --DATAMEM[Ri]; }
 
 I(mul_a_b)
 {
@@ -318,7 +338,6 @@ I(mul_a_b)
 	
 	ACCUM = result & 0x00FF;
 	FUNREGS.B = (result & 0xFF00) >> 8;
-	
 }
 
 I(div_a_b)
@@ -328,7 +347,6 @@ I(div_a_b)
 	
 	ACCUM = ACCUM / FUNREGS.B;
 	FUNREGS.B = ACCUM % FUNREGS.B;
-	
 }
 
 
@@ -412,7 +430,7 @@ I(swap_a) { ACCUM = ((ACCUM & 0x0F) << 4) | ((ACCUM & 0xF0) >> 4); }
 
 I(ljmp_ad16) { mem->PC = (uint16_t)INSTR(1) << 8 | INSTR(2); DecPC_1; }
 
-I(ajmp_ad11) { mem->PC = ((mem->PC + 2) & 0xF800) | INSTR(1) | (uint16_t)(INSTR(0) & 0xE0) << 3; DecPC_1; }
+I(ajmp_ad11) { mem->PC = ((mem->PC + 2) & 0xF800) | (uint16_t)INSTR(1) | (uint16_t)(INSTR(0) & 0xE0) << 3; DecPC_1; }
 
 I(sjmp_rel) { mem->PC += ((int8_t)INSTR(1) + 1/*2*/); }
 
@@ -464,7 +482,7 @@ I(lcall_ad16)
 {
 	DATAMEM[++FUNREGS.SP] = (uint8_t)((mem->PC+3) & 0x00FF); 
 	DATAMEM[++FUNREGS.SP] = (uint8_t)(((mem->PC+3) & 0xFF00) >> 8); 
-	mem->PC = (uint16_t)INSTR(1) << 8 | INSTR(2);
+	mem->PC = ((uint16_t)INSTR(1) << 8) | (INSTR(2));
 	DecPC_1;
 }
 
@@ -478,7 +496,7 @@ I(acall_ad11)
 
 I(ret) 
 {
-	mem->PC = ((uint16_t)DATAMEM[FUNREGS.SP] << 8) | (uint16_t)DATAMEM[FUNREGS.SP - 1]; 
+	mem->PC = ((uint16_t)(DATAMEM[FUNREGS.SP]) << 8) | (uint16_t)(DATAMEM[FUNREGS.SP - 1]); 
 	FUNREGS.SP -= 2;
 	DecPC_1;
 }
