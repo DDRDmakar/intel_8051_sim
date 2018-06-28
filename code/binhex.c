@@ -82,6 +82,7 @@ void setup_memory_ihex(Memory *mem)
 		if (strlen(current_semicolon) < 11) break;
 		length_str[0] = current_semicolon[1];
 		length_str[1] = current_semicolon[2];
+		if (!is_uhex_num(length_str)) progstop("Error parsing ihex file - incorrect segment length", 1);
 		// Allocate memory for ": ** **** ** (current_line_len *) **" + '\0'
 		size_t current_line_len = strtoul(length_str, NULL, 16); // Numner of data bytes
 		current_line = (char*)malloc((current_line_len + 12 + 1) * sizeof(char));
@@ -95,6 +96,7 @@ void setup_memory_ihex(Memory *mem)
 		offset_str[1] = current_line[4];
 		offset_str[2] = current_line[5];
 		offset_str[3] = current_line[6];
+		if (!is_uhex_num(offset_str)) progstop("Error parsing ihex file - incorrect offset", 1);
 		uint16_t offset = strtoul(offset_str, NULL, 16);
 		if (offset + current_line_len > program_memory_size)
 		{
