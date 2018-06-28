@@ -138,11 +138,12 @@ int execute(Memory *mem)
 
 
 // 'p' or 'd' + 4 symbols for hex + \n + next symbol + \0
-#define BREAKPOINT_BUFFER_LEN 8
+#define BREAKPOINT_BUFFER_LEN 9
 
 void breakpoint(Memory *mem)
 {
-	char buffer[BREAKPOINT_BUFFER_LEN];
+	char buffer[BREAKPOINT_BUFFER_LEN] = "";
+	
 	if (!extvar->step) printf("========> BREAKPOINT: ");
 	
 	while (1)
