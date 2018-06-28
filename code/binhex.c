@@ -4,28 +4,12 @@
 #include <stdlib.h>
 #include <jansson.h>
 
-#include "headers/binhex.h"
 #include "headers/error.h"
 #include "headers/memory.h"
 #include "headers/extvar.h"
 #include "headers/file.h"
 #include "headers/tools.h"
-
-
-void dump2text(Memory *mem)
-{
-	const size_t program_memory_size = extvar->EPM_active ? EPM_SIZE : RPM_SIZE;
-	json_t *root = json_object();
-	char* program = memory_to_str(mem->PM.EPM, program_memory_size);
-	
-	json_object_set_new(root, "program", json_string(program));
-	json_object_set_new(root, "data", json_string(""));
-	char *result = json_dumps(root, 0);
-	write_text_file_cwd(extvar->output_file_name, result);
-	free(result);
-	free(program);
-	json_decref(root);
-}
+#include "headers/binhex.h"
 
 void setup_memory_bin(Memory *mem)
 {
@@ -62,6 +46,7 @@ void setup_memory_bin(Memory *mem)
 	
 	// Начальное значение, если оно не было задано через файл
 	if (mem->DM_str == NULL || mem->DM_str[0x81] == NULL) mem->DM.RDM_REG.SP = 0x07;
+	mem->PC = 0x0000;
 }
 
 void setup_memory_ihex(Memory *mem)
@@ -148,6 +133,7 @@ void setup_memory_ihex(Memory *mem)
 	
 	// Начальное значение, если оно не было задано через файл
 	if (mem->DM_str == NULL || mem->DM_str[0x81] == NULL) mem->DM.RDM_REG.SP = 0x07;
+	mem->PC = 0x0000;
 	
 #ifdef _DEBUGINFO
 	printf("End reading hex file\n");

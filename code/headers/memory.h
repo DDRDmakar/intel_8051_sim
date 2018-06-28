@@ -139,4 +139,12 @@ typedef struct Memory
 	uint32_t PC;
 } Memory; // Defined type
 
+
+#define REGISTERS_COUNT 21
+#define SET_REGISTER_MNEMO_ARRAY() \
+const char       *register_mnemo_array[REGISTERS_COUNT] = {"ACC", "B",  "PSW", "IP", "IE", "DPH", "DPL", "SP", "P3", "P2", "P1", "P0", "PCON", "TCON", "TMOD", "SCON", "SBUF", "TL1", "TL0", "TH1", "TH0"};
+#define SET_REGISTER_ADDRESSES_ARRAY() \
+const uint16_t  register_address_array[REGISTERS_COUNT] = {0xE0,  0xF0, 0xD0,  0xB8, 0xA8, 0x83,  0x82,  0x81, 0xB0, 0xA0, 0x90, 0x80, 0x87,   0x88,   0x89,   0x98,   0x99,   0x8B,  0x8A,  0x8D,  0x8C};
+
+
 #endif

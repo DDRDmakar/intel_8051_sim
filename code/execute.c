@@ -15,12 +15,9 @@
 #include "headers/mnemonic.h"
 #include "instructions.c"
 
-#define PROG_START 0
-
 void breakpoint(Memory *mem);
 void snapshot(Memory *mem);
 void snapshot_end(Memory *mem);
-void memory_to_file(Memory *mem, char *filename);
 char *memory_to_str(uint8_t *storage, size_t size);
 
 int execute(Memory *mem)
@@ -35,7 +32,6 @@ int execute(Memory *mem)
 	
 	if (extvar->endpoint == -1) progerr("Warning - endpoint was not set manually or automatically.");
 	
-	mem->PC = PROG_START;
 	while (mem->PC < prog_memory_size && mem->PC < (uint32_t)extvar->endpoint)
 	{
 		tpc = mem->PC;
@@ -48,7 +44,7 @@ int execute(Memory *mem)
 		
 		if (current_instruction.i == NULL || current_instruction.n_bytes == 0) 
 		{
-			const char *err_msg = "Unknown instruction \"%s\" (OPCODE #%02x) at address #%04x";
+			const char *err_msg = "Unknown instruction \"%s\" (OPCODE #%02X) at address #%04X";
 			// ALLOCATE length of error message + mnemonic length + opcode + PC + 1
 			size_t errlen = strlen(err_msg) + (mem->PM_str ? strlen(mem->PM_str[tpc]) : 0) + 2 + 4 + 1;
 			char *err = (char*)malloc(errlen * sizeof(char));
@@ -61,34 +57,34 @@ int execute(Memory *mem)
 		if (extvar->debug)
 		{
 			if (
-				(current_instruction.n_bytes >= 1 && tpc+0 < prog_memory_size && extvar->savepoints[tpc+0] == -1) ||
-				(current_instruction.n_bytes >= 2 && tpc+1 < prog_memory_size && extvar->savepoints[tpc+1] == -1) ||
-				(current_instruction.n_bytes == 3 && tpc+2 < prog_memory_size && extvar->savepoints[tpc+2] == -1)
+				(current_instruction.n_bytes >= 1 && tpc+0 < prog_memory_size && (extvar->savepoints[tpc+0] == -1 || extvar->savepoints[tpc+0] == 2)) ||
+				(current_instruction.n_bytes >= 2 && tpc+1 < prog_memory_size && (extvar->savepoints[tpc+1] == -1 || extvar->savepoints[tpc+1] == 2)) ||
+				(current_instruction.n_bytes == 3 && tpc+2 < prog_memory_size && (extvar->savepoints[tpc+2] == -1 || extvar->savepoints[tpc+2] == 2))
 			) snapshot(mem);
 			
 			if (extvar->verbose)
 			{
 				if (extvar->enable_breakpoints && (
-					(current_instruction.n_bytes >= 1 && tpc+0 < prog_memory_size && extvar->breakpoints[tpc+0] == -1) ||
-					(current_instruction.n_bytes >= 2 && tpc+1 < prog_memory_size && extvar->breakpoints[tpc+1] == -1) ||
-					(current_instruction.n_bytes == 3 && tpc+2 < prog_memory_size && extvar->breakpoints[tpc+2] == -1)
+					(current_instruction.n_bytes >= 1 && tpc+0 < prog_memory_size && (extvar->breakpoints[tpc+0] == -1 || extvar->breakpoints[tpc+0] == 2)) ||
+					(current_instruction.n_bytes >= 2 && tpc+1 < prog_memory_size && (extvar->breakpoints[tpc+1] == -1 || extvar->breakpoints[tpc+1] == 2)) ||
+					(current_instruction.n_bytes == 3 && tpc+2 < prog_memory_size && (extvar->breakpoints[tpc+2] == -1 || extvar->breakpoints[tpc+2] == 2))
 				)) breakpoint(mem);
 				
 				switch (current_instruction.n_bytes)
 				{
 					case 1:
 					{
-						printf("[PC #%04x]: #%02x         (%s)\n", (unsigned int)tpc, mem->PM.EPM[tpc], (mem->PM_str ? mem->PM_str[tpc] : ""));
+						printf("[PC #%04X]: #%02X         (%s)\n", (unsigned int)tpc, mem->PM.EPM[tpc], (mem->PM_str ? mem->PM_str[tpc] : ""));
 						break;
 					}
 					case 2:
 					{
-						printf("[PC #%04x]: #%02x #%02x     (%s)\n", (unsigned int)tpc, mem->PM.EPM[tpc], mem->PM.EPM[tpc+1], (mem->PM_str ? mem->PM_str[tpc] : ""));
+						printf("[PC #%04X]: #%02X #%02X     (%s)\n", (unsigned int)tpc, mem->PM.EPM[tpc], mem->PM.EPM[tpc+1], (mem->PM_str ? mem->PM_str[tpc] : ""));
 						break;
 					}
 					case 3:
 					{
-						printf("[PC #%04x]: #%02x #%02x #%02x (%s)\n", (unsigned int)tpc, mem->PM.EPM[tpc], mem->PM.EPM[tpc+1], mem->PM.EPM[tpc+2], (mem->PM_str ? mem->PM_str[tpc] : ""));
+						printf("[PC #%04X]: #%02X #%02X #%02X (%s)\n", (unsigned int)tpc, mem->PM.EPM[tpc], mem->PM.EPM[tpc+1], mem->PM.EPM[tpc+2], (mem->PM_str ? mem->PM_str[tpc] : ""));
 						break;
 					}
 				}
@@ -101,24 +97,26 @@ int execute(Memory *mem)
 		
 		/* ============ */
 		
+		IncrPC_1;
+		
 		// Устанавливается флаг паритета
 		PSWBITS.P = is_odd_number_of_bits(ACCUM);
 		
 		if (extvar->debug)
 		{
 			if (
-				(current_instruction.n_bytes >= 1 && tpc+0 < prog_memory_size && extvar->savepoints[tpc+0] == 1) ||
-				(current_instruction.n_bytes >= 2 && tpc+1 < prog_memory_size && extvar->savepoints[tpc+1] == 1) ||
-				(current_instruction.n_bytes == 3 && tpc+2 < prog_memory_size && extvar->savepoints[tpc+2] == 1)
+				(current_instruction.n_bytes >= 1 && tpc+0 < prog_memory_size && (extvar->savepoints[tpc+0] == 1 || extvar->savepoints[tpc+0] == 2)) ||
+				(current_instruction.n_bytes >= 2 && tpc+1 < prog_memory_size && (extvar->savepoints[tpc+1] == 1 || extvar->savepoints[tpc+1] == 2)) ||
+				(current_instruction.n_bytes == 3 && tpc+2 < prog_memory_size && (extvar->savepoints[tpc+2] == 1 || extvar->savepoints[tpc+2] == 2))
 			) snapshot(mem);
 			
 			if (extvar->verbose)
 			{
 				if (
 					extvar->step || (extvar->enable_breakpoints && (
-						(current_instruction.n_bytes >= 1 && tpc+0 < prog_memory_size && extvar->breakpoints[tpc+0] == 1) ||
-						(current_instruction.n_bytes >= 2 && tpc+1 < prog_memory_size && extvar->breakpoints[tpc+1] == 1) ||
-						(current_instruction.n_bytes == 3 && tpc+2 < prog_memory_size && extvar->breakpoints[tpc+2] == 1)
+						(current_instruction.n_bytes >= 1 && tpc+0 < prog_memory_size && (extvar->breakpoints[tpc+0] == 1 || extvar->breakpoints[tpc+0] == 2)) ||
+						(current_instruction.n_bytes >= 2 && tpc+1 < prog_memory_size && (extvar->breakpoints[tpc+1] == 1 || extvar->breakpoints[tpc+1] == 2)) ||
+						(current_instruction.n_bytes == 3 && tpc+2 < prog_memory_size && (extvar->breakpoints[tpc+2] == 1 || extvar->breakpoints[tpc+2] == 2))
 					))
 				) breakpoint(mem);
 				
@@ -130,11 +128,9 @@ int execute(Memory *mem)
 			}
 			
 		}
-		
-		IncrPC_1;
 	}
 	
-	if (extvar->debug && extvar->verbose) printf("Program ended at #%04x\n", (unsigned int)mem->PC);
+	if (extvar->debug && extvar->verbose) printf("Program ended at #%04X\n", (unsigned int)mem->PC);
 	snapshot_end(mem);
 	
 	return 0;
@@ -175,7 +171,7 @@ void breakpoint(Memory *mem)
 				(extvar->EDM_active ? EDM_SIZE : RDM_SIZE);
 			
 			uint32_t addr = strtoul(&buffer[1], NULL, 16);
-			if (addr < maxaddr) printf("value #%02x\n", (first == 'p' ? mem->PM.EPM[addr] : mem->DM.EDM[addr]));
+			if (addr < maxaddr) printf("value #%02X\n", (first == 'p' ? mem->PM.EPM[addr] : mem->DM.EDM[addr]));
 			else printf("Error - address is too big. Try again: ");
 		}
 		else printf("Error - wrong address. Try again: ");
@@ -242,14 +238,38 @@ void snapshot_end(Memory *mem)
 
 void memory_to_file(Memory *mem, char *filename)
 {
-	json_t *root = json_object();
-	char* program = extvar->EPM_active ? memory_to_str(mem->PM.EPM, EPM_SIZE) : memory_to_str(mem->PM.RPM, RPM_SIZE);
-	char* data    = extvar->EDM_active ? memory_to_str(mem->DM.EDM, EDM_SIZE) : memory_to_str(mem->DM.RDM, RDM_SIZE);
+	const size_t program_memory_size = extvar->EPM_active ? EPM_SIZE : RPM_SIZE;
+	const size_t data_memory_size    = extvar->EDM_active ? EDM_SIZE : RDM_SIZE;
 	
+	json_t *root = json_object();
+	
+	char *pc_str = uint32_to_hex_str(mem->PC);
+	if (!pc_str) progstop("Error converting PC into hex string", 1);
+	// PC
+	json_object_set_new(root, "PC", json_string(pc_str));
+	
+	SET_REGISTER_ADDRESSES_ARRAY();
+	SET_REGISTER_MNEMO_ARRAY();
+	char *register_strings[REGISTERS_COUNT];
+	
+	for (size_t i = 0; i < REGISTERS_COUNT; ++i)
+	{
+		register_strings[i] = uint32_to_hex_str(mem->DM.RDM[register_address_array[i]]);
+		if (!register_strings[i]) progstop("Error converting register into hex string", 1);
+		json_object_set_new(root, register_mnemo_array[i], json_string(register_strings[i]));
+	}
+	
+	char* program = program_memory_to_str(mem, mem->PM.EPM, program_memory_size);
+	char* data    = memory_to_str(mem->DM.EDM, data_memory_size);
 	json_object_set_new(root, "program", json_string(program));
 	json_object_set_new(root, "data", json_string(data));
+	
 	char *result = json_dumps(root, 0);
+	
 	write_text_file_cwd(filename, result);
+	
+	for (size_t i = 0; i < REGISTERS_COUNT; ++i) free(register_strings[i]);
+	free(pc_str);
 	free(result);
 	free(program);
 	free(data);

@@ -6,6 +6,7 @@
 #include "headers/file.h"
 #include "headers/error.h"
 #include "headers/extvar.h"
+#include "headers/memory.h"
 #include "headers/tools.h"
 #include "headers/defines.h"
 
@@ -20,6 +21,9 @@ int32_t detect_mnemonic(char *line);
 
 void setup_memory_text(Memory *mem)
 {
+	SET_REGISTER_ADDRESSES_ARRAY();
+	SET_REGISTER_MNEMO_ARRAY();
+	
 	// Get JSON object of memory
 	char *str_state = read_text_file_cwd(extvar->input_file_name);
 	if (str_state == NULL)
@@ -60,7 +64,6 @@ void setup_memory_text(Memory *mem)
 		after_last_address = fill_memory(mem->PM.EPM, &mem->PM_str, plain_text, EPM_SIZE);
 	else
 		after_last_address = fill_memory(mem->PM.RPM, &mem->PM_str, plain_text, RPM_SIZE);
-	free(plain_text);
 	if (extvar->endpoint == -1) extvar->endpoint = after_last_address;
 	
 	// DATA
@@ -74,7 +77,33 @@ void setup_memory_text(Memory *mem)
 		fill_memory(mem->DM.EDM, &mem->DM_str, plain_text, EDM_SIZE);
 	else
 		fill_memory(mem->DM.RDM, &mem->DM_str, plain_text, RDM_SIZE);
-	free(plain_text);
+	
+	
+	// PC
+	json_t *reg_pc = json_object_get(root, "PC");
+	if (reg_pc == NULL)
+	{
+		const char *err_msg = "Error parsing memory file \"%s\". PC register is not defined.";
+		const size_t errlen = strlen(err_msg) + strlen(extvar->input_file_name) + 1;
+		char *err = (char*)malloc(errlen * sizeof(char));
+		MALLOC_NULL_CHECK(err);
+		snprintf(err, errlen, err_msg, extvar->input_file_name);
+		progstop(err, 1);
+	}
+	char *reg_pc_str = (char*)json_string_value(reg_pc);
+	mem->PC = hex_str_to_uint32(reg_pc_str);
+	
+	// REGISTERS
+	for (size_t i = 0; i < REGISTERS_COUNT; ++i)
+	{
+		json_t *reg_node = json_object_get(root, register_mnemo_array[i]);
+		if (reg_node == NULL) continue;
+		char *reg_node_str = (char*)json_string_value(reg_node);
+		mem->DM.RDM[register_address_array[i]] = hex_str_to_uint32(reg_node_str);
+#ifdef _DEBUGINFO
+		printf("MNEMO: %s	ADDR: %x	NODE: |%s|	VALUE: %x\n", register_mnemo_array[i], register_address_array[i], reg_node_str, mem->DM.RDM[register_address_array[i]]);
+#endif
+	}
 	
 	free(root);
 	
@@ -181,36 +210,52 @@ int push_mnemonic(uint8_t *storage, const unsigned int addr, char *line)
 		case -1: // _BREAK I
 		{
 #ifdef _DEBUGINFO
-printf("Adding breakpoint before 0x%4x\n", addr);
+printf("Adding breakpoint before 0x%04X\n", addr);
 #endif
-			if (addr < (extvar->EPM_active ? RPM_SIZE : EPM_SIZE)) extvar->breakpoints[addr] = -1; // Break before next instruction
+			if (addr < (extvar->EPM_active ? RPM_SIZE : EPM_SIZE))
+			{
+				if (extvar->breakpoints[addr] == 1) extvar->breakpoints[addr] = 2;
+				else extvar->breakpoints[addr] = -1; // Break before next instruction
+			}
 			return 1;
 			break;
 		}
 		case -2: // _SAVE I
 		{
 #ifdef _DEBUGINFO
-printf("Adding savepoint before 0x%4x\n", addr);
+printf("Adding savepoint before 0x%04X\n", addr);
 #endif
-			if (addr < (extvar->EPM_active ? RPM_SIZE : EPM_SIZE)) extvar->savepoints[addr] = -1; // Snapshot before next instruction
+			if (addr < (extvar->EPM_active ? RPM_SIZE : EPM_SIZE))
+			{
+				if (extvar->savepoints[addr] == 1) extvar->savepoints[addr] = 2;
+				else extvar->savepoints[addr] = -1; // Snapshot before next instruction
+			}
 			return 1;
 			break;
 		}
 		case -3: // I ^BREAK
 		{
 #ifdef _DEBUGINFO
-printf("Adding breakpoint after 0x%4x\n", addr-1);
+printf("Adding breakpoint after 0x%04X\n", addr-1);
 #endif
-			if (addr != 0) extvar->breakpoints[addr-1] = 1; // Break after previous instruction
+			if (addr != 0)
+			{
+				if (extvar->breakpoints[addr-1] == -1) extvar->breakpoints[addr-1] = 2;
+				else extvar->breakpoints[addr-1] = 1; // Break after previous instruction
+			}
 			return 1;
 			break;
 		}
 		case -4: // I ^SAVE
 		{
 #ifdef _DEBUGINFO
-printf("Adding savepoint after 0x%4x\n", addr-1);
+printf("Adding savepoint after 0x%04X\n", addr-1);
 #endif
-			if (addr != 0) extvar->savepoints[addr-1] = 1; // Snapshot after previous instruction
+			if (addr != 0)
+			{
+				if (extvar->savepoints[addr-1] == -1) extvar->savepoints[addr-1] = 2;
+				else extvar->savepoints[addr-1] = 1; // Snapshot after previous instruction
+			}
 			return 1;
 			break;
 		}

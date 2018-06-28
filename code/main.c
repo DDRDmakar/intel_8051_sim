@@ -153,7 +153,7 @@ int main(int argc, char** argv)
 						{
 							if (strcmp(argv[i+1], "bin") == 0) extvar->mode = 0;
 							else if (strcmp(argv[i+1], "text") == 0) extvar->mode = 1;
-							else if (strcmp(argv[i+1], "hex") == 0) extvar->mode = 2;
+							else if (strcmp(argv[i+1], "ihex") == 0) extvar->mode = 2;
 							else progstop("Incorrect argument - input file type", 1);
 							++i;
 							goto leave_flag_loop;
@@ -193,8 +193,17 @@ int main(int argc, char** argv)
 						)
 						{
 							char *strvalue = &argv[i+1][1];
-							if   (argv[i+1][0] == '^') extvar->breakpoints[(uint16_t)strtoul(strvalue, NULL, 16)] = -1;
-							else extvar->breakpoints[(uint16_t)strtoul(strvalue, NULL, 16)] = 1;
+							uint16_t addrvalue = strtoul(strvalue, NULL, 16);
+							if   (argv[i+1][0] == '^')
+							{
+								if (extvar->breakpoints[addrvalue] == 1) extvar->breakpoints[addrvalue] = 2;
+								else extvar->breakpoints[addrvalue] = -1;
+							}
+							else
+							{
+								if (extvar->breakpoints[addrvalue] == -1) extvar->breakpoints[addrvalue] = 2;
+								else extvar->breakpoints[addrvalue] = 1;
+							}
 							++i;
 							goto leave_flag_loop;
 						}
@@ -216,8 +225,18 @@ int main(int argc, char** argv)
 						)
 						{
 							char *strvalue = &argv[i+1][1];
-							if   (argv[i+1][0] == '^') extvar->savepoints[(uint16_t)strtoul(strvalue, NULL, 16)] = -1;
-							else extvar->savepoints[(uint16_t)strtoul(strvalue, NULL, 16)] = 1;
+							uint16_t addrvalue = strtoul(strvalue, NULL, 16);
+							if   (argv[i+1][0] == '^')
+							{
+								if (extvar->savepoints[addrvalue] == 1) extvar->savepoints[addrvalue] = 2;
+								else extvar->savepoints[addrvalue] = -1;
+							}
+							else
+							{
+								if (extvar->savepoints[addrvalue] == -1) extvar->savepoints[addrvalue] = 2;
+								else extvar->savepoints[addrvalue] = 1;
+							}
+							
 							++i;
 							goto leave_flag_loop;
 						}
@@ -298,7 +317,7 @@ int main(int argc, char** argv)
 	// Convert bin and ihex files into JSON text format
 	if (convert_file)
 	{
-		dump2text(&m);
+		memory_to_file(&m, extvar->output_file_name);
 		return 0;
 	}
 	
