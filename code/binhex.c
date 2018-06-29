@@ -15,7 +15,7 @@ void setup_memory_bin(Memory *mem)
 {
 	const size_t program_memory_size = extvar->EPM_active ? EPM_SIZE : RPM_SIZE;
 	
-	uint8_t *buffer = (uint8_t*)malloc(program_memory_size * sizeof(uint8_t));
+	uint8_t *buffer = (uint8_t*)calloc(program_memory_size, sizeof(uint8_t));
 	MALLOC_NULL_CHECK(buffer);
 	
 	buffer = read_bin_file_cwd(buffer, program_memory_size, extvar->input_file_name);

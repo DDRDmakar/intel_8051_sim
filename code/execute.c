@@ -47,7 +47,6 @@
 typedef struct Checker_thread_args
 {
 	int flag;
-	int ready;
 } Checker_thread_args;
 
 void breakpoint(Memory *mem);
@@ -81,7 +80,7 @@ int execute(Memory *mem)
 	{
 		tpc = mem->PC;
 		
-		if (mem->PM_str != NULL && mem->PM_str[tpc] == NULL) break;
+		if (extvar->mode == 1 && mem->PM_str != NULL && mem->PM_str[tpc] == NULL) break;
 		
 		Instruction_storage current_instruction = instr[mem->PM.RPM[tpc]];
 		
@@ -186,12 +185,9 @@ int execute(Memory *mem)
 				}
 				
 				struct timespec reqtime;
-				reqtime.tv_sec = 0;
-				reqtime.tv_nsec = (uint32_t)extvar->clk * (uint32_t)(extvar->ticks ? current_instruction.n_ticks : 1) * 1000000;
-				
+				reqtime.tv_sec = extvar->clk / 1000;
+				reqtime.tv_nsec = ((uint32_t)extvar->clk % 1000) * (uint32_t)(extvar->ticks ? current_instruction.n_ticks : 1) * 1000000;
 				nanosleep(&reqtime, NULL);
-				
-				execution_interrupt_checker_args.ready = 1;
 			}
 			
 		}
@@ -363,15 +359,10 @@ void* execution_interrupt_checker(void *vargs)
 	while (1)
 	{
 		// Если нажат Enter
-		if ( (
-				!fgets(buffer, BREAKPOINT_BUFFER_LEN, stdin) ||
-				strlen(buffer) == 0 || 
-				(strlen(buffer) == 1 && buffer[0] == '\n')
-			) && args->ready
-		)
-		{
-			args->flag = args->ready;
-			args->ready = 0;
-		}
+		if (
+			!fgets(buffer, BREAKPOINT_BUFFER_LEN, stdin) ||
+			strlen(buffer) == 0 || 
+			(strlen(buffer) == 1 && buffer[0] == '\n')
+		) args->flag = 1;
 	}
 }

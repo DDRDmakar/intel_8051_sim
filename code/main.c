@@ -275,55 +275,56 @@ int main(int argc, char** argv)
 	);
 #endif
 	
-	Memory m;
-	m.PC = 0;
-	m.DM_str = NULL;
-	m.PM_str = NULL;
+	Memory* m = (Memory*)calloc(1, sizeof(Memory));
+	MALLOC_NULL_CHECK(m)
+	m->PC = 0;
+	m->DM_str = NULL;
+	m->PM_str = NULL;
 	
 #ifdef _DEBUGINFO
 	// MEMORY TEST
-	for (uint16_t i = 0; i < 256; ++i) {m.DM.EDM[i] = i;}
-	//m.DM.RDM.ACC = 36;
+	for (uint16_t i = 0; i < 256; ++i) {m->DM.EDM[i] = i;}
+	//m->DM.RDM.ACC = 36;
 	// E0 = 224
-	printf("#E0 = %d	", m.DM.EDM[0xE0]);
-	printf("ACC = %d\n", m.DM.RDM_REG.ACC);
+	printf("#E0 = %d	", m->DM.EDM[0xE0]);
+	printf("ACC = %d\n", m->DM.RDM_REG.ACC);
 	
-	printf("#90 = %d	", m.DM.EDM[0x90]);
-	printf("P1 = %d\n", m.DM.RDM_REG.P1);
+	printf("#90 = %d	", m->DM.EDM[0x90]);
+	printf("P1 = %d\n", m->DM.RDM_REG.P1);
 	
-	printf("#A0 = %d	", m.DM.EDM[0xA0]);
-	printf("P2 = %d\n", m.DM.RDM_REG.P2);
+	printf("#A0 = %d	", m->DM.EDM[0xA0]);
+	printf("P2 = %d\n", m->DM.RDM_REG.P2);
 	
-	printf("#B8 = %d	", m.DM.EDM[0xB8]);
-	printf("IP = %d\n", m.DM.RDM_REG.IP);
+	printf("#B8 = %d	", m->DM.EDM[0xB8]);
+	printf("IP = %d\n", m->DM.RDM_REG.IP);
 	
-	printf("#D0 = %d	", m.DM.EDM[0xD0]);
-	printf("PSW = %d\n", m.DM.RDM_REG.PSW.PSW);
+	printf("#D0 = %d	", m->DM.EDM[0xD0]);
+	printf("PSW = %d\n", m->DM.RDM_REG.PSW.PSW);
 	
-	printf("#F0 = %d	", m.DM.EDM[0xF0]);
-	printf("B = %d\n", m.DM.RDM_REG.B);
+	printf("#F0 = %d	", m->DM.EDM[0xF0]);
+	printf("B = %d\n", m->DM.RDM_REG.B);
 #endif
 	
 	setup_mnemonics_alphabet();
 	
 	switch (extvar->mode)
 	{
-		case 0: { setup_memory_bin(&m); break; }
-		case 1: { setup_memory_text(&m); break; }
-		case 2: { setup_memory_ihex(&m); break; }
+		case 0: { setup_memory_bin(m); break; }
+		case 1: { setup_memory_text(m); break; }
+		case 2: { setup_memory_ihex(m); break; }
 		default: { progstop("Error - incorrect simulator mode selected", 1); }
 	}
 	
 	// Convert bin and ihex files into JSON text format
 	if (convert_file)
 	{
-		memory_to_file(&m, extvar->output_file_name);
+		memory_to_file(m, extvar->output_file_name);
 		return 0;
 	}
 	
 	/* =================== */
 	
-	execute(&m);
+	execute(m);
 	
 	/* =================== */
 	
