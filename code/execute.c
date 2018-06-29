@@ -113,7 +113,12 @@ int execute(Memory *mem)
 					(current_instruction.n_bytes >= 1 && tpc+0 < prog_memory_size && (extvar->breakpoints[tpc+0] == -1 || extvar->breakpoints[tpc+0] == 2)) ||
 					(current_instruction.n_bytes >= 2 && tpc+1 < prog_memory_size && (extvar->breakpoints[tpc+1] == -1 || extvar->breakpoints[tpc+1] == 2)) ||
 					(current_instruction.n_bytes == 3 && tpc+2 < prog_memory_size && (extvar->breakpoints[tpc+2] == -1 || extvar->breakpoints[tpc+2] == 2))
-				)) breakpoint(mem);
+				))
+				{
+					END_CHECKER_THREAD;
+					breakpoint(mem);
+					START_CHECKER_THREAD;
+				}
 				
 				switch (current_instruction.n_bytes)
 				{
