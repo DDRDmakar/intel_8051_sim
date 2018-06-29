@@ -29,9 +29,9 @@
 		checker_thread_started = 0; \
 	}
 #define START_CHECKER_THREAD \
+	execution_interrupt_checker_args.flag = 0; \
 	if (!checker_thread_started && !extvar->step) \
 	{ \
-		execution_interrupt_checker_args.flag = 0; \
 		thread_status = pthread_create(          \
 			&execution_interrupt_checker_thread, \
 			NULL,                                \
@@ -106,19 +106,19 @@ int execute(Memory *mem)
 				(current_instruction.n_bytes == 3 && tpc+2 < prog_memory_size && (extvar->savepoints[tpc+2] == -1 || extvar->savepoints[tpc+2] == 2))
 			) snapshot(mem);
 			
+			if (extvar->enable_breakpoints && (
+				(current_instruction.n_bytes >= 1 && tpc+0 < prog_memory_size && (extvar->breakpoints[tpc+0] == -1 || extvar->breakpoints[tpc+0] == 2)) ||
+				(current_instruction.n_bytes >= 2 && tpc+1 < prog_memory_size && (extvar->breakpoints[tpc+1] == -1 || extvar->breakpoints[tpc+1] == 2)) ||
+				(current_instruction.n_bytes == 3 && tpc+2 < prog_memory_size && (extvar->breakpoints[tpc+2] == -1 || extvar->breakpoints[tpc+2] == 2))
+			))
+			{
+				END_CHECKER_THREAD;
+				breakpoint(mem);
+				START_CHECKER_THREAD;
+			}
+			
 			if (extvar->verbose)
 			{
-				if (extvar->enable_breakpoints && (
-					(current_instruction.n_bytes >= 1 && tpc+0 < prog_memory_size && (extvar->breakpoints[tpc+0] == -1 || extvar->breakpoints[tpc+0] == 2)) ||
-					(current_instruction.n_bytes >= 2 && tpc+1 < prog_memory_size && (extvar->breakpoints[tpc+1] == -1 || extvar->breakpoints[tpc+1] == 2)) ||
-					(current_instruction.n_bytes == 3 && tpc+2 < prog_memory_size && (extvar->breakpoints[tpc+2] == -1 || extvar->breakpoints[tpc+2] == 2))
-				))
-				{
-					END_CHECKER_THREAD;
-					breakpoint(mem);
-					START_CHECKER_THREAD;
-				}
-				
 				switch (current_instruction.n_bytes)
 				{
 					case 1:
@@ -159,31 +159,31 @@ int execute(Memory *mem)
 				(current_instruction.n_bytes == 3 && tpc+2 < prog_memory_size && (extvar->savepoints[tpc+2] == 1 || extvar->savepoints[tpc+2] == 2))
 			) snapshot(mem);
 			
+			// Прекращение исполнения программы по нажатию Enter
+			// В режиме step мы не стартуем проверку нажатия enter
+			if (!extvar->step && ENTER_PRESSED)
+			{
+				END_CHECKER_THREAD;
+				breakpoint(mem);
+				START_CHECKER_THREAD;
+			}
+			
+			else if (
+				extvar->step || 
+				(extvar->enable_breakpoints && (
+					(current_instruction.n_bytes >= 1 && tpc+0 < prog_memory_size && (extvar->breakpoints[tpc+0] == 1 || extvar->breakpoints[tpc+0] == 2)) ||
+					(current_instruction.n_bytes >= 2 && tpc+1 < prog_memory_size && (extvar->breakpoints[tpc+1] == 1 || extvar->breakpoints[tpc+1] == 2)) ||
+					(current_instruction.n_bytes == 3 && tpc+2 < prog_memory_size && (extvar->breakpoints[tpc+2] == 1 || extvar->breakpoints[tpc+2] == 2))
+				))
+			)
+			{
+				END_CHECKER_THREAD;
+				breakpoint(mem);
+				START_CHECKER_THREAD;
+			}
+			
 			if (extvar->verbose)
 			{
-				// Прекращение исполнения программы по нажатию Enter
-				// В режиме step мы не стартуем проверку нажатия enter
-				if (!extvar->step && ENTER_PRESSED)
-				{
-					END_CHECKER_THREAD;
-					breakpoint(mem);
-					START_CHECKER_THREAD;
-				}
-				
-				else if (
-					extvar->step || 
-					(extvar->enable_breakpoints && (
-						(current_instruction.n_bytes >= 1 && tpc+0 < prog_memory_size && (extvar->breakpoints[tpc+0] == 1 || extvar->breakpoints[tpc+0] == 2)) ||
-						(current_instruction.n_bytes >= 2 && tpc+1 < prog_memory_size && (extvar->breakpoints[tpc+1] == 1 || extvar->breakpoints[tpc+1] == 2)) ||
-						(current_instruction.n_bytes == 3 && tpc+2 < prog_memory_size && (extvar->breakpoints[tpc+2] == 1 || extvar->breakpoints[tpc+2] == 2))
-					))
-				)
-				{
-					END_CHECKER_THREAD;
-					breakpoint(mem);
-					START_CHECKER_THREAD;
-				}
-				
 				struct timespec reqtime;
 				reqtime.tv_sec = extvar->clk / 1000;
 				reqtime.tv_nsec = ((uint32_t)extvar->clk % 1000) * (uint32_t)(extvar->ticks ? current_instruction.n_ticks : 1) * 1000000;
@@ -210,7 +210,7 @@ void breakpoint(Memory *mem)
 {
 	char buffer[BREAKPOINT_BUFFER_LEN] = "";
 	
-	if (!extvar->step) printf("========> BREAKPOINT: ");
+	if (!extvar->step) printf("[PC #%04X]:========> BREAKPOINT: ", mem->PC);
 	
 	while (1)
 	{
@@ -286,7 +286,7 @@ void snapshot(Memory *mem)
 	
 	snprintf(buffer, buffer_len, "%s%s__%d__%s", output_file_rel_dir, timebuffer, snapshot_counter, (last_slash_ptr ? last_slash_ptr+1 : extvar->output_file_name));
 	
-	if (extvar->debug && extvar->verbose)
+	if (extvar->debug)
 	{
 		const char *mes_template = "========> Saving machine state into file \"%s\"\n";
 		// Allocate length of message + length of filename + 1;
