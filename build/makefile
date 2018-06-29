@@ -2,7 +2,7 @@
 
 CC=gcc
 DIR=../code/
-CFLAGS := -lm -Os -std=c11 -pedantic -Wextra -Wall -l jansson -D _ENDIANNESS=$(ENDIANNESS)
+CFLAGS := -lm -Os -std=c11 -pedantic -Wextra -Wall -l pthread -l jansson -D _ENDIANNESS=$(ENDIANNESS)
 BIN_NAME=sim8051
 
 ifdef DEBUG

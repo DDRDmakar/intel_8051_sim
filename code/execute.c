@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <jansson.h>
 #include <time.h>
+#include <pthread.h>
 
 #include "headers/execute.h"
 #include "headers/extvar.h"
@@ -15,10 +16,45 @@
 #include "headers/mnemonic.h"
 #include "instructions.c"
 
+#define THREAD_ERROR_CREATE -11
+#define THREAD_ERROR_JOIN   -12
+#define THREAD_SUCCESS        0
+
+#define END_CHECKER_THREAD \
+	if (checker_thread_started) \
+	{ \
+		pthread_cancel(execution_interrupt_checker_thread); \
+		thread_status = pthread_join(execution_interrupt_checker_thread, (void**)&thread_status_addr); \
+		if (thread_status != THREAD_SUCCESS) progstop("Error joining checker thread", THREAD_ERROR_JOIN); \
+		checker_thread_started = 0; \
+	}
+#define START_CHECKER_THREAD \
+	if (!checker_thread_started && !extvar->step) \
+	{ \
+		execution_interrupt_checker_args.flag = 0; \
+		thread_status = pthread_create(          \
+			&execution_interrupt_checker_thread, \
+			NULL,                                \
+			execution_interrupt_checker,         \
+			&execution_interrupt_checker_args    \
+		);                                       \
+		if (thread_status != 0) progstop("Error - unable to create checker thread", THREAD_ERROR_CREATE); \
+		checker_thread_started = 1; \
+	}
+#define ENTER_PRESSED execution_interrupt_checker_args.flag == 1
+
+
+typedef struct Checker_thread_args
+{
+	int flag;
+	int ready;
+} Checker_thread_args;
+
 void breakpoint(Memory *mem);
 void snapshot(Memory *mem);
 void snapshot_end(Memory *mem);
-char *memory_to_str(uint8_t *storage, size_t size);
+char* memory_to_str(uint8_t *storage, size_t size);
+void* execution_interrupt_checker(void *vargs);
 
 int execute(Memory *mem)
 {
@@ -31,6 +67,15 @@ int execute(Memory *mem)
 	size_t tpc; // Temporary PC
 	
 	if (extvar->endpoint == -1) progerr("Warning - endpoint was not set manually or automatically.");
+	
+	// Execution interrupt checker thread
+	pthread_t execution_interrupt_checker_thread;
+	Checker_thread_args execution_interrupt_checker_args;
+	int thread_status, thread_status_addr;
+	int checker_thread_started = 0;
+	
+	// Start checker thread
+	START_CHECKER_THREAD;
 	
 	while (mem->PC < prog_memory_size && mem->PC < (uint32_t)extvar->endpoint)
 	{
@@ -112,19 +157,36 @@ int execute(Memory *mem)
 			
 			if (extvar->verbose)
 			{
-				if (
-					extvar->step || (extvar->enable_breakpoints && (
+				// Прекращение исполнения программы по нажатию Enter
+				// В режиме step мы не стартуем проверку нажатия enter
+				if (!extvar->step && ENTER_PRESSED)
+				{
+					END_CHECKER_THREAD;
+					breakpoint(mem);
+					START_CHECKER_THREAD;
+				}
+				
+				else if (
+					extvar->step || 
+					(extvar->enable_breakpoints && (
 						(current_instruction.n_bytes >= 1 && tpc+0 < prog_memory_size && (extvar->breakpoints[tpc+0] == 1 || extvar->breakpoints[tpc+0] == 2)) ||
 						(current_instruction.n_bytes >= 2 && tpc+1 < prog_memory_size && (extvar->breakpoints[tpc+1] == 1 || extvar->breakpoints[tpc+1] == 2)) ||
 						(current_instruction.n_bytes == 3 && tpc+2 < prog_memory_size && (extvar->breakpoints[tpc+2] == 1 || extvar->breakpoints[tpc+2] == 2))
 					))
-				) breakpoint(mem);
+				)
+				{
+					END_CHECKER_THREAD;
+					breakpoint(mem);
+					START_CHECKER_THREAD;
+				}
 				
 				struct timespec reqtime;
 				reqtime.tv_sec = 0;
 				reqtime.tv_nsec = (uint32_t)extvar->clk * (uint32_t)(extvar->ticks ? current_instruction.n_ticks : 1) * 1000000;
 				
 				nanosleep(&reqtime, NULL);
+				
+				execution_interrupt_checker_args.ready = 1;
 			}
 			
 		}
@@ -132,6 +194,9 @@ int execute(Memory *mem)
 	
 	if (extvar->debug && extvar->verbose) printf("Program ended at #%04X\n", (unsigned int)mem->PC);
 	snapshot_end(mem);
+	
+	// Join checker thread
+	END_CHECKER_THREAD;
 	
 	return 0;
 }
@@ -161,6 +226,13 @@ void breakpoint(Memory *mem)
 		if (!strcmp(buffer, "save"))
 		{
 			snapshot(mem);
+			continue;
+		}
+		
+		// on/off step-by-step mode
+		if (!strcmp(buffer, "step"))
+		{
+			extvar->step = extvar->step ? 0 : 1;
 			continue;
 		}
 		
@@ -277,4 +349,24 @@ void memory_to_file(Memory *mem, char *filename)
 	json_decref(root);
 }
 
-
+void* execution_interrupt_checker(void *vargs)
+{
+	Checker_thread_args *args = (Checker_thread_args*)vargs;
+	
+	char buffer[BREAKPOINT_BUFFER_LEN] = "";
+	
+	while (1)
+	{
+		// Если нажат Enter
+		if ( (
+				!fgets(buffer, BREAKPOINT_BUFFER_LEN, stdin) ||
+				strlen(buffer) == 0 || 
+				(strlen(buffer) == 1 && buffer[0] == '\n')
+			) && args->ready
+		)
+		{
+			args->flag = args->ready;
+			args->ready = 0;
+		}
+	}
+}
