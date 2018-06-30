@@ -15,3 +15,6 @@ report/*.gz
 report/*.toc
 build/*memory.json
 
+*/snapshots/*
+*dump.json
+

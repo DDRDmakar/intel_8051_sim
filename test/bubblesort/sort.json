@@ -1,0 +1,189 @@
+{
+"PC": "#0 ",
+
+"ACC": "#0 ",
+"B": "#0 ",
+"PSW": "#0 ",
+"IP": "#0 ",
+"IE": "#0 ",
+"DPH": "#0 ",
+"DPL": "#0 ",
+"SP": "#7 ",
+"P3": "#0 ",
+"P2": "#0 ",
+"P1": "#0 ",
+"P0": "#0 ",
+"PCON": "#0 ",
+"TCON": "#0 ",
+"TMOD": "#0 ",
+"SCON": "#0 ",
+"SBUF": "#0 ",
+"TL1": "#0 ",
+"TL0": "#0 ",
+"TH1": "#0 ",
+"TH0": "#0 ",
+
+"program": "
+'
+#02 - LJMP_ad16
+#22 - RET
+#74 - MOV_a_d
+#75 - MOV_ad_d
+#95 - SUBB_a_ad
+#C3 - CLR_C
+#E4 - CLR_a
+#F5 - MOV_ad_a
+#FA - MOV_r2_a
+'
+
+
+'addr 0000'
+LJMP_ad16   0   #06 
+LJMP_ad16   #01 #5b 
+MOV_ad_d    #81 #2e 
+LCALL_ad16  #01 #5e 
+
+MOV_a_ad  #82 
+JZ_rel    #03 
+
+'addr 0010' #02 0 #03 
+
+MOV_r1_d  0 
+MOV_a_r1    
+ORL_a_d   0 
+'addr 0018'
+JZ_rel #1b 
+
+#7a 0 #90 #01 #62 #78 
+'addr 0020' #01 #75 #a0 0 #e4 #93 #f2 #a3 
+'addr 0028' #08 #b8 0 #02 #05 #a0 #d9 #f4 
+'addr 0030' #da #f2 #75 #a0 #ff
+
+CLR_a         
+MOV_r0_d  #ff 
+
+'addr 0038'
+
+'==== ЦИКЛ ==='
+MOV_rdm0_a
+DJNZ_r0_rel   #fd
+'==== ЦИКЛ ==='
+
+'addr 3b'
+MOV_r0_d  0    
+MOV_a_r0       
+ORL_a_d   0    
+JZ_rel    #0a  
+
+#79 #01 #75 #a0 0 #e4 
+'addr 0048' #f3 #09 #d8 #fc 
+
+MOV_r0_d  0    
+MOV_a_r0       
+ORL_a_d   0    
+JZ_rel    #0c  
+
+#79 0 #90 0 #01 
+'addr 0058' #e4 #f0 #a3 #d8 #fc #d9 #fa 
+MOV_ad_d #08 #01 
+MOV_ad_d #09 0 
+MOV_ad_d #0a #0b 
+'addr 0068'
+MOV_ad_d #0b 0 
+MOV_ad_d #0c #0d 
+MOV_ad_d #0d 0 
+MOV_ad_d #0e #04 
+MOV_ad_d #0f 0 
+MOV_ad_d #10 #07
+MOV_ad_d #11 0 
+MOV_ad_d #12 #0c 
+
+'addr 0080' 
+CLR_a 
+MOV_ad_a #13 
+MOV_ad_a #14 
+MOV_ad_a #15 
+
+MOV_ad_d #16 #09 
+MOV_ad_a #17 
+MOV_ad_d #18 #05 
+MOV_ad_a #19 
+MOV_ad_d #1a #02 
+MOV_ad_a #1b 
+MOV_ad_d #1c #0a 
+MOV_ad_a #1d 
+MOV_ad_d #1e #0f 
+MOV_ad_a #1f 
+'addr 00a0' 
+MOV_ad_d #20 #06 
+MOV_ad_a #21 
+MOV_ad_d #22 #08 
+'addr 00a8'
+MOV_ad_a #23 
+MOV_ad_d #24 #03 
+MOV_ad_a #25 
+MOV_ad_d #26 #0e 
+MOV_ad_a #27          'Конец заполнения памяти' '^BREAK'
+
+LJMP_ad16 0 #03 
+CLR_a     
+'addr 00b8' 
+MOV_ad_a #28     
+MOV_ad_a #29     
+CLR_a            
+MOV_ad_a #2c     
+MOV_ad_a #2d     
+MOV_a_d  #0f     
+CLR_c            
+SUBB_a_ad #28    
+MOV_r2_a         
+CLR_a            
+
+'addr 00c8' #95 #29 #fb #e4 #f5 #2a #f5 #2b 
+'addr 00d0' #c3 #e5 #2a #9a #e5 #2b #64 #80 
+'addr 00d8' #8b #f0 #63 #f0 #80 #95 #f0 #50 
+'addr 00e0' #5b #e5 #2a #25 #2a #fe #e5 #2b 
+'addr 00e8' #33 #ee #24 #08 #f9 #87 #06 #09 
+'addr 00f0' #87 #07 #19 #e5 #2a #f5 #2e #04 
+'addr 00f8' #25 #e0 #24 #08 #f8 #86 #04 #08 
+'addr 0100' #86 #05 #18 #c3 #ec #9e #ed #64 
+'addr 0108' #80 #8f #f0 #63 #f0 #80 #95 #f0 
+'addr 0110' #50 #20 #e5 #2e #04 #25 #e0 #24 
+'addr 0118' #08 #f8 #86 #04 #08 #86 #05 #18 
+'addr 0120' #a7 #04 #09 #a7 #05 #19 #a6 #06 
+'addr 0128' #08 #a6 #07 #18 #75 #2c #01 #75 
+'addr 0130' #2d 0 #05 #2a #e4 #b5 #2a #98 
+'addr 0138' #05 #2b #80 #94 #e5 #2c #45 #2d 
+'addr 0140' #60 #18 #05 #28 #e4 #b5 #28 #02 
+'addr 0148' #05 #29 #c3 #e5 #28 #94 #0f #e5 
+'addr 0150' #29 #64 #80 #94 #80 #50 #03 #02 
+'addr 0158'
+0 #bc #22 
+LJMP_ad16 0 #b7
+
+MOV_ad_d #82 0 
+RET               'Возврат' '^BREAK'
+
+0 0 0 0 0 0 
+
+'addr 0168' 0 0 0 0 0 0 0 0
+",
+
+"data": "
+'addr 0000' 0 0 0 0 0 0 0 0 
+'addr 0008' 0 0 0 0 0 0 0 0 
+'addr 0010' 0 0 0 0 0 0 0 0 
+'addr 0018' 0 0 0 0 0 0 0 0 
+'addr 0020' 0 0 0 0 0 0 0 0 
+'addr 0028' 0 0 0 0 0 0 0 0 
+'addr 0030' 0 0 0 0 0 0 0 0 
+'addr 0038' 0 0 0 0 0 0 0 0 
+'addr 0040' 0 0 0 0 0 0 0 0 
+'addr 0048' 0 0 0 0 0 0 0 0 
+'addr 0050' 0 0 0 0 0 0 0 0 
+'addr 0058' 0 0 0 0 0 0 0 0 
+'addr 0060' 0 0 0 0 0 0 0 0 
+'addr 0068' 0 0 0 0 0 0 0 0 
+'addr 0070' 0 0 0 0 0 0 0 0 
+'addr 0078' 0 0 0 0 0 0 0 0 
+'addr 0080' 0 #07 "}
