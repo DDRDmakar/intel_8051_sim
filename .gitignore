@@ -8,5 +8,10 @@ build/8051_errorlog.txt
 ТЗ/*.out
 ТЗ/*.gz
 ТЗ/*.toc
+report/*.aux
+report/*.log
+report/*.out
+report/*.gz
+report/*.toc
 build/*memory.json
 
