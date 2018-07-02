@@ -14,4 +14,4 @@ su -c 'dnf install jansson jansson-devel'
 su -c 'apt-get install libjansson libjansson-dev'
 
 ### Or
-download and install it manually: [HERE]:https://github.com/akheron/jansson
+download and install it manually: [HERE](https://github.com/akheron/jansson)
