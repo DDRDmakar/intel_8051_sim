@@ -1,1 +1,54 @@
+Usage: sim8051 [options]
+Options:
+    -h --help    Display basic information about program (this message)
+    -d --debug   Enable debugging messages (breakpoints and savepoints info)
+    -i --infile  Name of input program file
+                 Example: -i myfile
+    -o --outfle  Name of output file and snapshots
+                 Default name: "memory"
+                 Example: -o myfile
+    -c --clk     Time delay between instructions execution (ms)
+                 Default value is 0
+                 Example: -c 1000
+    -v --verbose Verbose mode. Shows instructions sequence in console.
+    -m --mode    Type of input program file (bin or text)
+                 Example: -m bin
+    -b --break   Add breakpoint.
+                 Argument is address (unsigned hex), where breakpoint
+                 will be placed.
+                 ^ before address means, that breakpoint will be activated
+                 before this instruction.
+                 _ before address means, that breakpoint will be activated
+                 after this instruction.
+                 Example: -b ^2C
+    --nobreak    Ignore breakpoints
+    -s --save    Add savepoint
+                 Argument is address (unsigned hex), where breakpoint
+                 will be placed.
+                 ^ before address means, that snapshot will be made
+                 before this instruction.
+                 _ before address means, that snapshot will be made
+                 after this instruction.
+                 Example: -s _2C
+    -z --convert Convert input file into text snapshot
+    -e --end     Define program end point.
+                 Argument is address (unsigned hex)
+                 If PC tops this value, program finishes and saves final
+                 snapshot into file.
+                 Example: -e E6
+    --epm        Enable external program memory support (16 Kbytes)
+    --edm        Enable external data memory support (16 Kbytes)
+    --step       Step-by-step mode. Execute instructions
+                 one-by-one pressing Enter.
 
+Breakpoint commands:
+    p**          Display values from program memory and data memory.
+    d**          First letter refers to place, where we read information
+                 from. 
+                 "p" - from program memory
+                 "d" - from data memory
+                 Example: d88 - read value from data memory at 0x88
+    save         Save machine state into file
+    step         Enable/Disable step-by-step mode
+    exit         Exit simulator
+    

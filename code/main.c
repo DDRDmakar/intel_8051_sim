@@ -23,7 +23,7 @@ Extvar *extvar;
 void show_help(void) 
 {
 	char* helpmessage = read_text_file_resources("help.txt");
-	printf("%s", helpmessage);
+	printf("%s\n", helpmessage);
 	free(helpmessage);
 }
 
