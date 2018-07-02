@@ -1,13 +1,17 @@
-# intel_8051_sim
+# Intel 8051 simulator
 
-To build the source code you need to have "jansson" library installed.
+## Building project
 
-RHEL: 
+To build the source code you need libraries:
+- jansson
+- pthread
+
+### RHEL:
 su -c 'yum install jansson jansson-devel'
 su -c 'dnf install jansson jansson-devel'
 
-Ubuntu, Debian: 
+### Ubuntu, Debian: 
 su -c 'apt-get install libjansson libjansson-dev'
 
-Or download and install it manually:
-https://github.com/akheron/jansson
+### Or
+download and install it manually: [HERE]:https://github.com/akheron/jansson
