@@ -237,6 +237,12 @@ void breakpoint(Memory *mem)
 			continue;
 		}
 		
+		// Exit simulator
+		if (!strcmp(buffer, "exit") || !strcmp(buffer, "quit") || !strcmp(buffer, "q"))
+		{
+			exit(0);
+		}
+		
 		if ((first == 'p' || first == 'd') && strlen(buffer) > 1 && strlen(buffer) <= 5 && is_uhex_num(&buffer[1]))
 		{
 			size_t maxaddr = 
