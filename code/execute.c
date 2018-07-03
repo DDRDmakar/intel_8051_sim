@@ -119,21 +119,27 @@ int execute(Memory *mem)
 			
 			if (extvar->verbose)
 			{
+				char *current_mnemonic = mem->PM_str ? mem->PM_str[tpc] : NULL;
+				if (
+					!current_mnemonic ||
+					(strlen(current_mnemonic) >= 2 && current_mnemonic[0] == '#' && is_uhex_num(current_mnemonic+1))
+				) current_mnemonic = current_instruction.mnemonic_str;
+				
 				switch (current_instruction.n_bytes)
 				{
 					case 1:
 					{
-						printf("[PC #%04X]: #%02X         (%s)\n", (unsigned int)tpc, mem->PM.EPM[tpc], (mem->PM_str ? mem->PM_str[tpc] : ""));
+						printf("[PC #%04X]: #%02X         (%s)\n", (unsigned int)tpc, mem->PM.EPM[tpc], current_mnemonic);
 						break;
 					}
 					case 2:
 					{
-						printf("[PC #%04X]: #%02X #%02X     (%s)\n", (unsigned int)tpc, mem->PM.EPM[tpc], mem->PM.EPM[tpc+1], (mem->PM_str ? mem->PM_str[tpc] : ""));
+						printf("[PC #%04X]: #%02X #%02X     (%s)\n", (unsigned int)tpc, mem->PM.EPM[tpc], mem->PM.EPM[tpc+1], current_mnemonic);
 						break;
 					}
 					case 3:
 					{
-						printf("[PC #%04X]: #%02X #%02X #%02X (%s)\n", (unsigned int)tpc, mem->PM.EPM[tpc], mem->PM.EPM[tpc+1], mem->PM.EPM[tpc+2], (mem->PM_str ? mem->PM_str[tpc] : ""));
+						printf("[PC #%04X]: #%02X #%02X #%02X (%s)\n", (unsigned int)tpc, mem->PM.EPM[tpc], mem->PM.EPM[tpc+1], mem->PM.EPM[tpc+2], current_mnemonic);
 						break;
 					}
 				}
