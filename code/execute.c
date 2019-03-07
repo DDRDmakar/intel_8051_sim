@@ -119,11 +119,16 @@ int execute(Memory *mem)
 			
 			if (extvar->verbose)
 			{
-				char *current_mnemonic = mem->PM_str ? mem->PM_str[tpc] : NULL;
-				if (
-					!current_mnemonic ||
-					(strlen(current_mnemonic) >= 2 && current_mnemonic[0] == '#' && is_uhex_num(current_mnemonic+1))
-				) current_mnemonic = current_instruction.mnemonic_str;
+				const char *current_mnemonic_from_text = mem->PM_str ? mem->PM_str[tpc] : NULL;
+				const char *current_mnemonic = 
+					(
+						!current_mnemonic_from_text ||
+						(strlen(current_mnemonic_from_text) >= 2 && current_mnemonic_from_text[0] == '#' && is_uhex_num(current_mnemonic_from_text+1)) ||
+						(strlen(current_mnemonic_from_text) >= 2 && current_mnemonic_from_text[0] == '*' && is_udec_num(current_mnemonic_from_text+1)) ||
+						(strlen(current_mnemonic_from_text) >= 1 && is_ubin_num(current_mnemonic_from_text+1))
+					) ?
+					(get_default_instruction_name(mem->PM.EPM[tpc])) :
+					current_mnemonic_from_text;
 				
 				switch (current_instruction.n_bytes)
 				{
