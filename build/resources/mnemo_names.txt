@@ -1,0 +1,256 @@
+NOP
+AJMP ad11
+LJMP ad16
+RR a
+INC a
+INC ad
+INC @r0
+INC @r1
+INC r0
+INC r1
+INC r2
+INC r3
+INC r4
+INC r5
+INC r6
+INC r7
+JBC bit rel
+ACALL ad11
+LCALL ad16
+RRC a
+DEC a
+DEC ad
+DEC @r0
+DEC @r1
+DEC r0
+DEC r1
+DEC r2
+DEC r3
+DEC r4
+DEC r5
+DEC r6
+DEC r7
+JB bit rel
+AJMP ad11
+RET
+RL a
+ADD a #d
+ADD a ad
+ADD a @r0
+ADD a @r1
+ADD a r0
+ADD a r1
+ADD a r2
+ADD a r3
+ADD a r4
+ADD a r5
+ADD a r6
+ADD a r7
+JNB bit rel
+ACALL ad11
+RETI
+RLC a
+ADDC a #d
+ADDC a ad
+ADDC a @r0
+ADDC a @r1
+ADDC a r0
+ADDC a r1
+ADDC a r2
+ADDC a r3
+ADDC a r4
+ADDC a r5
+ADDC a r6
+ADDC a r7
+JC rel
+AJMP ad11
+ORL ad a
+ORL ad #d
+ORL a #d
+ORL a ad
+ORL a @r0
+ORL a @r1
+ORL a r0
+ORL a r1
+ORL a r2
+ORL a r3
+ORL a r4
+ORL a r5
+ORL a r6
+ORL a r7
+JNC rel
+ACALL ad11
+ANL ad a
+ANL ad #d
+ANL a #d
+ANL a ad
+ANL a @r0
+ANL a @r1
+ANL a r0
+ANL a r1
+ANL a r2
+ANL a r3
+ANL a r4
+ANL a r5
+ANL a r6
+ANL a r7
+JZ rel
+AJMP ad11
+XRL ad a
+XRL ad #d
+XRL a #d
+XRL a ad
+XRL a @r0
+XRL a @r1
+XRL a r0
+XRL a r1
+XRL a r2
+XRL a r3
+XRL a r4
+XRL a r5
+XRL a r6
+XRL a r7
+JNZ rel
+ACALL ad11
+ORL c bit
+JMP @a+dptr
+MOV a #d
+MOV ad #d
+MOV @r0 #d
+MOV @r1 #d
+MOV r0 #d
+MOV r1 #d
+MOV r2 #d
+MOV r3 #d
+MOV r4 #d
+MOV r5 #d
+MOV r6 #d
+MOV r7 #d
+SJMP rel
+AJMP ad11
+ANL c bit
+MOVC a @a+pc
+DIV a b
+MOV add ads
+MOV ad @r0
+MOV ad @r1
+MOV ad r0
+MOV ad r1
+MOV ad r2
+MOV ad r3
+MOV ad r4
+MOV ad r5
+MOV ad r6
+MOV ad r7
+MOV dptr #d16
+ACALL ad11
+MOV bit c
+MOVC a @a+dptr
+SUBB a #d
+SUBB a ad
+SUBB a @r0
+SUBB a @r1
+SUBB a r0
+SUBB a r1
+SUBB a r2
+SUBB a r3
+SUBB a r4
+SUBB a r5
+SUBB a r6
+SUBB a r7
+ORL c /bit
+AJMP ad11
+MOV c bit
+INC dptr
+MUL a b
+NOT USED INSTRUCTION
+MOV @r0 ad
+MOV @r1 ad
+MOV r0 ad
+MOV r1 ad
+MOV r2 ad
+MOV r3 ad
+MOV r4 ad
+MOV r5 ad
+MOV r6 ad
+MOV r7 ad
+ANL c /bit
+ACALL ad11
+CPL bit
+CPL c
+CJNE a #d rel
+CJNE a ad rel
+CJNE @r0 #d rel
+CJNE @r1 #d rel
+CJNE r0 #d rel
+CJNE r1 #d rel
+CJNE r2 #d rel
+CJNE r3 #d rel
+CJNE r4 #d rel
+CJNE r5 #d rel
+CJNE r6 #d rel
+CJNE r7 #d rel
+PUSH ad
+AJMP ad11
+CLR bit
+CLR c
+SWAP a
+XCH a ad
+XCH a @r0
+XCH a @r1
+XCH a r0
+XCH a r1
+XCH a r2
+XCH a r3
+XCH a r4
+XCH a r5
+XCH a r6
+XCH a r7
+POP ad
+ACALL ad11
+SETB bit
+SETB c
+DA a
+DJNZ ad rel
+XCHD a @r0
+XCHD a @r1
+DJNZ r0 rel
+DJNZ r1 rel
+DJNZ r2 rel
+DJNZ r3 rel
+DJNZ r4 rel
+DJNZ r5 rel
+DJNZ r6 rel
+DJNZ r7 rel
+MOVX a @dptr
+AJMP ad11
+MOVX a @r0
+MOVX a @r1
+CLR a
+MOV a ad
+MOV a @r0
+MOV a @r1
+MOV a r0
+MOV a r1
+MOV a r2
+MOV a r3
+MOV a r4
+MOV a r5
+MOV a r6
+MOV a r7
+MOVX @dptr a
+ACALL ad11
+MOVX @r0 a
+MOVX @r1 a
+CPL a
+MOV ad a
+MOV @r0 a
+MOV @r1 a
+MOV r0 a
+MOV r1 a
+MOV r2 a
+MOV r3 a
+MOV r4 a
+MOV r5 a
+MOV r6 a
+MOV r7 a
