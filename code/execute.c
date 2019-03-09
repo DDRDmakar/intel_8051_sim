@@ -37,6 +37,7 @@
 #include "headers/file.h"
 #include "headers/tools.h"
 #include "headers/mnemonic.h"
+#include "headers/defines.h"
 #include "instructions.c"
 
 #define THREAD_ERROR_CREATE -11
@@ -165,6 +166,11 @@ int execute(Memory *mem)
 						printf("[PC #%04X]: #%02X #%02X #%02X (%s)\n", (unsigned int)tpc, mem->PM.EPM[tpc], mem->PM.EPM[tpc+1], mem->PM.EPM[tpc+2], current_mnemonic);
 						break;
 					}
+					default: 
+					{
+						progstop("Internal error - wrong number of bytes for instruction #%02X", mem->PM.EPM[tpc]);
+						break;
+					}
 				}
 			}
 		}
@@ -231,59 +237,98 @@ int execute(Memory *mem)
 	return 0;
 }
 
-
-// 'p' or 'd' + 4 symbols for hex + \n + next symbol + \0
-#define BREAKPOINT_BUFFER_LEN 9
+// x - string to match command name
+// n - number of arguments
+#define BREAKPOINT_IF_COMMAND(x, n) if (!strcmp(breakpoint_args[0], x) && (linelen <= (n) || !breakpoint_args[n]))
 
 void breakpoint(Memory *mem)
 {
 	char buffer[BREAKPOINT_BUFFER_LEN] = "";
 	
-	if (!extvar->step) printf("[PC #%04X]:========> BREAKPOINT: ", mem->PC);
+	if (!extvar->step) printf("[PC #%04X]: BREAKPOINT ====> ", mem->PC);
 	
 	while (1)
 	{
+		// If reading error or string is empty, exit from breakpoint
 		if (!fgets(buffer, BREAKPOINT_BUFFER_LEN, stdin)) break;
-		
 		if (strlen(buffer) == 0 || (strlen(buffer) == 1 && buffer[0] == '\n')) break;
+		
+		// remove \n symbol in the end of string
 		if (buffer[strlen(buffer) - 1] == '\n') buffer[strlen(buffer) - 1] = '\0';
 		
-		char first = buffer[0];
-		// p - program memory
-		// d - data memory
+		// Leave only single spaces between words and no spaces before and after text
+		remove_doubled_spaces(buffer);
+		
+		size_t linelen = strlen(buffer);
+		
+		char** breakpoint_args = text_split(buffer, " ");
+		
+		int i;
+		for (i = 0; i < BREAKPOINT_BUFFER_LEN && breakpoint_args[i]; ++i)
+			printf("Argument %d is |%s|\n", i, breakpoint_args[i]);
+		
+		if (!breakpoint_args || !(*breakpoint_args)) break;
 		
 		// Make snapshot
-		if (!strcmp(buffer, "save"))
+		BREAKPOINT_IF_COMMAND("save", 1)
+		if (!strcmp(breakpoint_args[0], "save") && linelen >= 1 && breakpoint_args)
 		{
 			snapshot(mem);
 			continue;
 		}
 		
 		// on/off step-by-step mode
-		if (!strcmp(buffer, "step"))
+		BREAKPOINT_IF_COMMAND("step", 1)
 		{
 			extvar->step = extvar->step ? 0 : 1;
 			continue;
 		}
 		
 		// Exit simulator
-		if (!strcmp(buffer, "exit") || !strcmp(buffer, "quit") || !strcmp(buffer, "q"))
+		if (
+			(
+				!strcmp(breakpoint_args[0], "exit") ||
+				!strcmp(breakpoint_args[0], "quit") ||
+				!strcmp(breakpoint_args[0], "q")
+			) 
+			&&
+			(
+				(linelen <= (1) || !breakpoint_args[1])
+			)
+		) 
 		{
 			exit(0);
 		}
 		
-		if ((first == 'p' || first == 'd') && strlen(buffer) > 1 && strlen(buffer) <= 5 && is_uhex_num(&buffer[1]))
+		if (
+			(
+				!strcmp(breakpoint_args[0], "p") ||
+				!strcmp(breakpoint_args[0], "d")
+			) 
+			&&
+			(
+				(linelen <= (2) || !breakpoint_args[2])
+			)
+		)
 		{
-			size_t maxaddr = 
-				first == 'p' ? 
-				(extvar->EPM_active ? EPM_SIZE : RPM_SIZE) : 
-				(extvar->EDM_active ? EDM_SIZE : RDM_SIZE);
-			
-			uint32_t addr = strtoul(&buffer[1], NULL, 16);
-			if (addr < maxaddr) printf("value #%02X\n", (first == 'p' ? mem->PM.EPM[addr] : mem->DM.EDM[addr]));
-			else printf("Error - address is too big. Try again: ");
+			if (breakpoint_args[1] && strlen(breakpoint_args[1]) <= 4 && is_uhex_num(breakpoint_args[1]))
+			{
+				uint8_t is_program = !strcmp(breakpoint_args[0], "p");
+				
+				const size_t maxaddr = 
+				is_program ? 
+				(extvar->EPM_active ? EPM_SIZE : RPM_SIZE) :
+				(extvar->EDM_active ? EDM_SIZE : RDM_SIZE) ;
+				
+				uint32_t addr = strtoul(breakpoint_args[1], NULL, 16);
+				if (addr < maxaddr) printf("value #%02X\n", is_program ? mem->PM.EPM[addr] : mem->DM.EDM[addr]);
+				else printf("Error - address is too big. Try again: ");
+			}
 		}
+		
 		else printf("Error - wrong address. Try again: ");
+		
+		if (!extvar->step) printf("========> ");
 	}
 }
 
@@ -389,15 +434,12 @@ void* execution_interrupt_checker(void *vargs)
 {
 	Checker_thread_args *args = (Checker_thread_args*)vargs;
 	
-	char buffer[BREAKPOINT_BUFFER_LEN] = "";
+	char buffer[BREAKPOINT_BUFFER_LEN];
 	
 	while (1)
 	{
 		// Если нажат Enter
-		if (
-			!fgets(buffer, BREAKPOINT_BUFFER_LEN, stdin) ||
-			strlen(buffer) == 0 || 
-			(strlen(buffer) == 1 && buffer[0] == '\n')
-		) args->flag = 1;
+		fgets(buffer, BREAKPOINT_BUFFER_LEN, stdin);
+		args->flag = 1;
 	}
 }

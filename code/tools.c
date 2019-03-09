@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "headers/error.h"
 #include "headers/defines.h"
@@ -180,3 +181,108 @@ uint32_t hex_str_to_uint32(char *str)
 	free(newstr_reserve_to_free);
 	return result;
 }
+
+/*
+ * Split text into parts separated by "sep"
+ * If sep or str is NULL or empty, function returns NULL
+ */
+char** text_split(const char *str, const char *sep)
+{
+	if (!str || !sep) progstop("Text pointer or sep passed for split is NULL", 1);
+	
+	size_t result_write_pointer = 0; // position in "result" array to write pointers into
+	
+	unsigned int text_length = strlen(str);
+	unsigned int sep_length = strlen(sep);
+	if (!text_length || !sep_length) return NULL;
+	
+	// resulting strings array
+	char **result = (char**)calloc(text_length+1, sizeof(char*)); // +1 if text length is 1
+	MALLOC_NULL_CHECK(result)
+	
+	// Current separator and next
+	char *current_sep_pointer, *next_sep_pointer;
+	
+	current_sep_pointer = strstr(str, sep); // Find separator
+	bool first = (current_sep_pointer != str); // If there is something before first separator
+	
+	if (!current_sep_pointer) // If there are no separators
+	{
+		char *current_part = (char*)malloc(text_length+1 * sizeof(char)); // +1 for null terminator
+		MALLOC_NULL_CHECK(current_part);
+		strncpy(current_part, str, text_length); // copy all text into resulting string
+		
+		result[result_write_pointer++] = current_part; // Write resulting string into array
+	}
+	else // If separators were found
+	{
+		while(current_sep_pointer && result_write_pointer < text_length)
+		{
+			// Find next separator
+			next_sep_pointer = strstr(current_sep_pointer + sep_length, sep);
+			
+			size_t current_part_len;
+			if      (first)            current_part_len = current_sep_pointer - str;
+			else if (next_sep_pointer) current_part_len = next_sep_pointer - current_sep_pointer - sep_length;
+			else                       current_part_len = str - current_sep_pointer + text_length - sep_length;
+			current_part_len /= sizeof(char);
+			
+			char *current_part = (char*)malloc(current_part_len+1 * sizeof(char)); // +1 for null terminator
+			MALLOC_NULL_CHECK(current_part);
+			
+			strncpy(
+				current_part, 
+				first ? (str) : (current_sep_pointer + sep_length), 
+				current_part_len
+			);
+			
+			
+			result[result_write_pointer++] = current_part; // Write resulting string into array
+			
+			if (!first) current_sep_pointer = next_sep_pointer; // Switch to next separator
+			first = false; // Now we end with first loop cycle
+		}
+	}
+	
+	return result;
+}
+
+// Removes from string doubled " " "tab" and " " "tab" in the begining and end of string
+void remove_doubled_spaces(char *str)
+{
+	bool afterspace = true;
+	size_t text_length = strlen(str);
+	char *write_pointer = str;
+	char *read_pointer = str;
+	
+	size_t i;
+	// iterate through each symbol
+	for(i = 0; i <= text_length; ++i)
+	{
+		if (*read_pointer == ' ' || *read_pointer == '\t' || *read_pointer == '\n')
+		{
+			if (afterspace)
+			{
+				// If we have space after space, increment only read pointer
+				++read_pointer;
+				continue;
+			}
+			afterspace = true;
+			*write_pointer = ' '; // Replace \t and \n with spaces
+		}
+		else *write_pointer = *read_pointer; // Write data
+		
+		if (*write_pointer == '\0')     // If it is end of string, exit
+		{
+			// if string is not empty and it is afterspace here, delete space in the end
+			if (write_pointer != str && afterspace) *(write_pointer - 1) = '\0';
+			break;
+		}
+		
+		if (*read_pointer != ' ' && *read_pointer != '\t' && *read_pointer != '\n') afterspace = false;
+		
+		++read_pointer;
+		++write_pointer;
+	}
+}
+
