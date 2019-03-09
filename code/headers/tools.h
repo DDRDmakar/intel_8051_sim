@@ -27,9 +27,9 @@
 #include <stdint.h>
 #include <string.h>
 
-int is_udec_num(char *line);
-int is_ubin_num(char *line);
-int is_uhex_num(char *line);
+int is_udec_num(const char *line);
+int is_ubin_num(const char *line);
+int is_uhex_num(const char *line);
 
 char *memory_to_str(uint8_t *storage, size_t size);
 char *program_memory_to_str(Memory *mem, uint8_t *storage, size_t size);

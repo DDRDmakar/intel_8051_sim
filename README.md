@@ -1,23 +1,24 @@
-# Intel 8051 simulator
+Intel 8051 simulator
+====================
 
-## Building project
+Building project
+----------------
 
 To build the source code you need libraries:
 - jansson
 - pthread
 
-#### RHEL:
-su -c 'yum install jansson jansson-devel'
-su -c 'dnf install jansson jansson-devel'
+**RHEL**  
+su -c 'yum install jansson jansson-devel'  
+su -c 'dnf install jansson jansson-devel'  
+**Ubuntu, Debian**  
+su -c 'apt-get install libjansson libjansson-dev'  
+**Or**  
+download and install it manually: [HERE](https://github.com/akheron/jansson)  
 
-#### Ubuntu, Debian: 
-su -c 'apt-get install libjansson libjansson-dev'
-
-#### Or
-download and install it manually: [HERE](https://github.com/akheron/jansson)
-
-
-## License
+License
+-------
+```
 MIT License
 
 Copyright (c) 2018 DDRDmakar
@@ -39,3 +40,4 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```

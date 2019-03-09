@@ -1,0 +1,3 @@
+2019-03-07 10:54:35    Error opening mnemonics config file "../../build/resources/mnemonics.json"
+2019-03-07 10:55:12    Error opening mnemonics config file "../../build/resources/mnemonics.json"
+2019-03-07 11:06:47    Error - mnemonic "ljmp_ad16" not found

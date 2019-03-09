@@ -301,17 +301,21 @@ printf("Adding savepoint after 0x%04X\n", addr-1);
 	return 0;
 }
 
+
+#define CHECK_IF_MNEMO_INITIALIZED if (mnemo == NULL) progstop("Error - mnemonics alphabet config was not set set up", 1);
+
 uint8_t get_mnemonic_from_file(char *name)
 {
-	if (mnemo == NULL) progstop("Error - mnemonics alphabet config was not set set up", 1);
+	CHECK_IF_MNEMO_INITIALIZED
 	
 	char *name_copy = (char*)malloc((strlen(name) + 1) * sizeof(char));
 	MALLOC_NULL_CHECK(name_copy);
 	strcpy(name_copy, name);
 	lowercase(name_copy);
 	
-	json_t *current_mnemonic = json_object_get(mnemo, name_copy);
-	if (current_mnemonic == NULL || !json_is_integer(current_mnemonic))
+	json_t *current_mnemonic_2 = json_object_get(mnemo, "textmode");
+	json_t *current_mnemonic   = current_mnemonic_2 ? json_object_get(current_mnemonic_2, name_copy) : NULL;
+	if (current_mnemonic_2 == NULL || current_mnemonic == NULL || !json_is_integer(current_mnemonic))
 	{
 		const char *err_msg = "Error - mnemonic \"%s\" not found";
 		const size_t errlen = strlen(err_msg) + strlen(name_copy) + 1;
@@ -325,6 +329,31 @@ uint8_t get_mnemonic_from_file(char *name)
 	
 	// Get node contents
 	uint8_t value = (uint8_t)json_integer_value(current_mnemonic); // (char*)memory_dump->children->content;
+	return value;
+}
+
+const char *get_default_instruction_name(uint8_t instr)
+{
+	CHECK_IF_MNEMO_INITIALIZED
+	
+	char str_instr[3];
+	snprintf(str_instr, 3, "%02X", instr);
+	
+	const json_t *current_mnemonic_2 = json_object_get(mnemo, "instrnames");
+	const json_t *current_mnemonic   = current_mnemonic_2 ? json_object_get(current_mnemonic_2, str_instr) : NULL;
+	
+	if (current_mnemonic_2 == NULL || current_mnemonic == NULL || !json_is_string(current_mnemonic))
+	{
+		const char *err_msg = "Error - mnemonic \"%d\" default name not found";
+		const size_t errlen = strlen(err_msg) + 3 + 1; // 3 - 8-bit decimal length
+		char *err = (char*)malloc(errlen * sizeof(char));
+		MALLOC_NULL_CHECK(err);
+		snprintf(err, errlen, err_msg, instr);
+		progstop(err, 1);
+	}
+	
+	// Get node contents
+	const char* value = json_string_value(current_mnemonic); // (char*)memory_dump->children->content;
 	return value;
 }
 
@@ -351,6 +380,7 @@ int32_t detect_mnemonic(char *line)
 	
 	switch (line[0])
 	{
+		// HEX value
 		case '#':
 		{
 			// Check string length
@@ -364,6 +394,7 @@ int32_t detect_mnemonic(char *line)
 			break;
 		}
 		
+		// DECIMAL value
 		case '*':
 		{
 			// Check string length
@@ -377,6 +408,7 @@ int32_t detect_mnemonic(char *line)
 			break;
 		}
 		
+		// BIN value
 		case '0': {} // Go down
 		case '1':
 		{
@@ -425,6 +457,7 @@ int32_t detect_mnemonic(char *line)
 		
 		default:
 		{
+			// Check if it is mnemonic, defined in JSON file
 			value = get_mnemonic_from_file(line);
 		}
 	}
@@ -443,7 +476,7 @@ void lowercase(char *line)
 
 void setup_mnemonics_alphabet(void)
 {
-	const char *filename = "mnemonics.json";
+	const char *filename = CONFIG_FILE_NAME;
 	const size_t config_location_len = strlen(extvar->resources_location) + strlen(filename) + 1;
 	char *config_location = (char*)malloc(config_location_len * sizeof(char));
 	MALLOC_NULL_CHECK(config_location);

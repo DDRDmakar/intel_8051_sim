@@ -26,6 +26,7 @@
 
 #define MAX_MNEMONIC_LENGTH 256
 #define MAX_PATH_LENGTH 2048
+#define CONFIG_FILE_NAME "mnemonics.json"
 
 #define BREAKPOINT_BUFFER_LEN 100
 

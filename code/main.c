@@ -175,7 +175,6 @@ int main(int argc, char** argv)
 						{
 							if (strcmp(argv[i+1], "bin") == 0) extvar->mode = 0;
 							else if (strcmp(argv[i+1], "text") == 0) extvar->mode = 1;
-							else if (strcmp(argv[i+1], "ihex") == 0) extvar->mode = 2;
 							else progstop("Incorrect argument - input file type", 1);
 							++i;
 							goto leave_flag_loop;
@@ -333,7 +332,6 @@ int main(int argc, char** argv)
 	{
 		case 0: { setup_memory_bin(m); break; }
 		case 1: { setup_memory_text(m); break; }
-		case 2: { setup_memory_ihex(m); break; }
 		default: { progstop("Error - incorrect simulator mode selected", 1); }
 	}
 	

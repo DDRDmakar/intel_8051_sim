@@ -31,7 +31,7 @@
 #include "headers/memory.h"
 #include "headers/tools.h"
 
-int is_udec_num(char *line)
+int is_udec_num(const char *line)
 {
 	if (!line || strlen(line) == 0) return 0;
 	
@@ -41,7 +41,7 @@ int is_udec_num(char *line)
 	}
 	return 1;
 }
-int is_ubin_num(char *line)
+int is_ubin_num(const char *line)
 {
 	if (!line || strlen(line) == 0) return 0;
 	
@@ -51,7 +51,7 @@ int is_ubin_num(char *line)
 	}
 	return 1;
 }
-int is_uhex_num(char *line)
+int is_uhex_num(const char *line)
 {
 	if (!line || strlen(line) == 0) return 0;
 	
