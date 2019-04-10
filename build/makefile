@@ -55,6 +55,8 @@ file.o: $(DIR)file.c $(DIR)headers/file.h $(DIR)headers/error.h $(DIR)headers/ex
 error.o: $(DIR)error.c $(DIR)headers/error.h
 	$(CC) $(CFLAGS) -c $(DIR)error.c
 
+# _POSIX_C_SOURCE=200809L
+# It allows you to use function that are not part of the standard C library but are part of the POSIX.1 (IEEE Standard 1003.1) standard.
 execute.o: $(DIR)execute.c $(DIR)headers/execute.h $(DIR)instructions.c $(DIR)headers/extvar.h $(DIR)headers/memory.h $(DIR)headers/tools.h $(DIR)headers/error.h $(DIR)headers/file.h $(DIR)headers/mnemonic.h
 	$(CC) $(CFLAGS) -D _POSIX_C_SOURCE=200809L  -c $(DIR)execute.c
 

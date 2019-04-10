@@ -35,5 +35,7 @@ char *memory_to_str(uint8_t *storage, size_t size);
 char *program_memory_to_str(Memory *mem, uint8_t *storage, size_t size);
 char *uint32_to_hex_str(uint32_t value);
 uint32_t hex_str_to_uint32(char *str);
+void remove_doubled_spaces(char *str);
+char** text_split(const char *str, const char *sep);
 
 #endif
