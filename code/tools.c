@@ -188,7 +188,7 @@ uint32_t hex_str_to_uint32(char *str)
  */
 char** text_split(const char *str, const char *sep)
 {
-	if (!str || !sep) progstop("Text pointer or sep passed for split is NULL", 1);
+	if (!str || !sep) progstop(1, "Text pointer or sep passed for split is NULL");
 	
 	size_t result_write_pointer = 0; // position in "result" array to write pointers into
 	

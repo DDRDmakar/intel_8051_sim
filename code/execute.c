@@ -173,7 +173,7 @@ int execute(Memory *mem)
 					}
 					default: 
 					{
-						progstop("Internal error - wrong number of bytes for instruction #%02X", mem->PM.EPM[tpc]);
+						progstop(1, "Internal error - wrong number of bytes for instruction #%02X", mem->PM.EPM[tpc]);
 						break;
 					}
 				}
