@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 DDRDmakar
+ * Copyright (c) 2018-2019 DDRDmakar
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,7 +36,7 @@ char *read_text_file_internal(const char *filename)
 	FILE *infile = fopen(filename, "r");
 	
 	// quit if the file does not exist
-	if (!infile) progstop("Error opening file", 1);
+	if (!infile) progstop(1, "Error opening file \"%s\"", filename);
 	
 	// Get the number of bytes
 	fseek(infile, 0L, SEEK_END);
@@ -49,7 +49,7 @@ char *read_text_file_internal(const char *filename)
 	char *buffer = (char*)calloc(numbytes, sizeof(char));
 	
 	// memory error
-	if (!buffer) progstop("Error allocating memory (text file buffer)", 1);
+	if (!buffer) progstop(1, "Error allocating memory (text file buffer)");
 	
 	// copy all the text into the buffer
 	fread(buffer, sizeof(char), numbytes, infile);
@@ -65,7 +65,7 @@ uint8_t *read_bin_file_internal(uint8_t *destination, const size_t maxlength, co
 	FILE *infile = fopen(filename, "rb");
 	
 	// quit if the file does not exist
-	if (!infile) progstop("Error opening file", 1);
+	if (!infile) progstop(1, "Error opening file \"%s\"", filename);
 	
 	// Get the number of bytes
 	fseek(infile, 0L, SEEK_END);
@@ -88,7 +88,7 @@ uint8_t *read_bin_file_internal(uint8_t *destination, const size_t maxlength, co
 void write_text_file_internal(const char *filename, const char *str)
 {
 	FILE *outfile = fopen(filename, "w");
-	if(!outfile) progstop("Error creating file!\n", 1);
+	if(!outfile) progstop(1, "Error creating file \"%s\"\n", filename);
 	fprintf(outfile, "%s", str);
 	fclose(outfile);
 }
@@ -96,7 +96,7 @@ void write_text_file_internal(const char *filename, const char *str)
 void write_bin_file_internal(const char *filename, const uint8_t *buffer, const size_t len)
 {
 	FILE *outfile = fopen(filename, "wb");
-	if(!outfile) progstop("Error creating file!\n", 1);
+	if(!outfile) progstop(1, "Error creating file \"%s\"\n", filename);
 	fwrite(buffer, sizeof(uint8_t), len, outfile);
 	fclose(outfile);
 }

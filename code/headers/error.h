@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 DDRDmakar
+ * Copyright (c) 2018-2019 DDRDmakar
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,12 +21,14 @@
  * 
  */
 
+#include <stdarg.h>
+
 #ifndef __ERROR
 #define __ERROR
 
-void progstop(const char *message, const int errcode);
-void progerr(const char *message);
+void progstop(const int errcode, const char *format, ...);
+void errlogprint(const char *format, ...);
 
-#define MALLOC_NULL_CHECK(x) if (!x) progstop("Error - out of memory. MALLOC() returned NULL.", 1);
+#define MALLOC_NULL_CHECK(x) if (!x) progstop(1, "Error - out of memory. MALLOC() returned NULL.");
 
 #endif

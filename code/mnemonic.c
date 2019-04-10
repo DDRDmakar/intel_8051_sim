@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 DDRDmakar
+ * Copyright (c) 2018-2019 DDRDmakar
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -49,38 +49,22 @@ void setup_memory_text(Memory *mem)
 	
 	// Get JSON object of memory
 	char *str_state = read_text_file_cwd(extvar->input_file_name);
-	if (str_state == NULL)
-	{
-		const char *err_msg = "Error opening memory file \"%s\"";
-		const size_t errlen = strlen(err_msg) + strlen(extvar->input_file_name) + 1;
-		char *err = (char*)malloc(errlen * sizeof(char));
-		MALLOC_NULL_CHECK(err);
-		snprintf(err, errlen, err_msg, extvar->input_file_name);
-		progstop(err, 1);
-	}
+	if (str_state == NULL) progstop(1, "Error opening memory file \"%s\"", extvar->input_file_name);
 	
 	size_t l = strlen(str_state); // Replace newlines with spaces (to make json correct)
 	for(size_t i = 0; i < l; ++i) if (str_state[i] == '\n' || str_state[i] == '\t') str_state[i] = ' ';
 	
 	json_error_t error;
 	json_t *root = json_loads(str_state, 0, &error);
-	if (root == NULL)
-	{
-		const char *err_msg = "Error parsing memory file \"%s\"";
-		const size_t errlen = strlen(err_msg) + strlen(extvar->input_file_name) + 1;
-		char *err = (char*)malloc(errlen * sizeof(char));
-		MALLOC_NULL_CHECK(err);
-		snprintf(err, errlen, err_msg, extvar->input_file_name);
-		progstop(err, 1);
-	}
+	if (root == NULL) progstop(1, "Error parsing memory file \"%s\"", extvar->input_file_name);
 	
 	// PROGRAM
 	json_t *memory_dump = json_object_get(root, "program");
 	if (memory_dump == NULL || !json_is_string(memory_dump))
-		progstop("Error - \"program\" node not found in memory file", 1);
+		progstop(1, "Error - \"program\" node not found in memory file");
 	char *plain_text = (char*)json_string_value(memory_dump);
 	if (plain_text == NULL)
-		progstop("Error - getting \"program\" node contents", 1);
+		progstop(1, "Error - getting \"program\" node contents");
 	
 	uint32_t after_last_address;
 	if (extvar->EPM_active)
@@ -92,27 +76,19 @@ void setup_memory_text(Memory *mem)
 	// DATA
 	memory_dump = json_object_get(root, "data");
 	if (memory_dump == NULL || !json_is_string(memory_dump))
-		progstop("Error - \"data\" node not found in memory file", 1);
+		progstop(1, "Error - \"data\" node not found in memory file");
 	plain_text = (char*)json_string_value(memory_dump);
 	if (plain_text == NULL)
-		progstop("Error - getting \"data\" node contents", 1);
+		progstop(1, "Error - getting \"data\" node contents");
 	if (extvar->EPM_active)
 		fill_memory(mem->DM.EDM, &mem->DM_str, plain_text, EDM_SIZE);
 	else
 		fill_memory(mem->DM.RDM, &mem->DM_str, plain_text, RDM_SIZE);
 	
-	
 	// PC
 	json_t *reg_pc = json_object_get(root, "PC");
-	if (reg_pc == NULL)
-	{
-		const char *err_msg = "Error parsing memory file \"%s\". PC register is not defined.";
-		const size_t errlen = strlen(err_msg) + strlen(extvar->input_file_name) + 1;
-		char *err = (char*)malloc(errlen * sizeof(char));
-		MALLOC_NULL_CHECK(err);
-		snprintf(err, errlen, err_msg, extvar->input_file_name);
-		progstop(err, 1);
-	}
+	if (reg_pc == NULL) progstop(1, "Error parsing memory file \"%s\". PC register is not defined.", extvar->input_file_name);
+	
 	char *reg_pc_str = (char*)json_string_value(reg_pc);
 	mem->PC = hex_str_to_uint32(reg_pc_str);
 	
@@ -151,16 +127,7 @@ uint32_t fill_memory(uint8_t *storage, char ***storage_str, const char *line, co
 	
 	for (unsigned i = 0; i < len; ++i) // Iterate through symbols
 	{
-		if (memory_address >= memory_size)
-		{
-			// 11 characters in memory size
-			const char *err_msg = "Error - memory dump size is bigger than available memort (%d bytes)";
-			const size_t errlen = strlen(err_msg) + 11 + 1;
-			char *err = (char*)malloc(errlen * sizeof(char));
-			MALLOC_NULL_CHECK(err);
-			snprintf(err, errlen, err_msg, memory_size);
-			progstop(err, 1);
-		}
+		if (memory_address >= memory_size) progstop(1, "Error - memory dump size is bigger than available memory (%d bytes)", memory_size);
 		
 		const char e = line[i]; // Current symbol
 		
@@ -285,16 +252,7 @@ printf("Adding savepoint after 0x%04X\n", addr-1);
 		default: 
 		{
 			if (value >= 0 && value < 256) storage[addr] = value;
-			else
-			{
-				const char *err_msg = "ERROR - incorrect mnemonic value %d";
-				// 11 charachers for address
-				const size_t errlen = strlen(err_msg) + 11 + 1;
-				char *err = (char*)malloc(errlen * sizeof(char));
-				MALLOC_NULL_CHECK(err);
-				snprintf(err, errlen, err_msg, value);
-				progstop(err, 1);
-			}
+			else progstop(1, "ERROR - incorrect mnemonic value %d", value);
 			return 0;
 		}
 	}
@@ -302,7 +260,7 @@ printf("Adding savepoint after 0x%04X\n", addr-1);
 }
 
 
-#define CHECK_IF_MNEMO_INITIALIZED if (mnemo == NULL) progstop("Error - mnemonics alphabet config was not set set up", 1);
+#define CHECK_IF_MNEMO_INITIALIZED if (mnemo == NULL) progstop(1, "Error - mnemonics alphabet config was not set set up");
 
 uint8_t get_mnemonic_from_file(char *name)
 {
@@ -317,12 +275,7 @@ uint8_t get_mnemonic_from_file(char *name)
 	json_t *current_mnemonic   = current_mnemonic_2 ? json_object_get(current_mnemonic_2, name_copy) : NULL;
 	if (current_mnemonic_2 == NULL || current_mnemonic == NULL || !json_is_integer(current_mnemonic))
 	{
-		const char *err_msg = "Error - mnemonic \"%s\" not found";
-		const size_t errlen = strlen(err_msg) + strlen(name_copy) + 1;
-		char *err = (char*)malloc(errlen * sizeof(char));
-		MALLOC_NULL_CHECK(err);
-		snprintf(err, errlen, err_msg, name_copy);
-		progstop(err, 1);
+		progstop(1, "Error - mnemonic \"%s\" not found", name_copy);
 	}
 	
 	free(name_copy);
@@ -344,12 +297,7 @@ const char *get_default_instruction_name(uint8_t instr)
 	
 	if (current_mnemonic_2 == NULL || current_mnemonic == NULL || !json_is_string(current_mnemonic))
 	{
-		const char *err_msg = "Error - mnemonic \"%d\" default name not found";
-		const size_t errlen = strlen(err_msg) + 3 + 1; // 3 - 8-bit decimal length
-		char *err = (char*)malloc(errlen * sizeof(char));
-		MALLOC_NULL_CHECK(err);
-		snprintf(err, errlen, err_msg, instr);
-		progstop(err, 1);
+		progstop(1, "Error - instruction \"%d\" default name not found", instr);
 	}
 	
 	// Get node contents
@@ -359,12 +307,7 @@ const char *get_default_instruction_name(uint8_t instr)
 
 void error_incorrect_value(char *line)
 {
-	const char *err_msg = "Error - incorrect value \"%s\"";
-	const size_t errlen = strlen(err_msg) + strlen(line) + 1;
-	char *err = (char*)malloc(errlen * sizeof(char));
-	MALLOC_NULL_CHECK(err);
-	snprintf(err, errlen, err_msg, line);
-	progstop(err, 1);
+	progstop(1, "Error - incorrect value \"%s\"", line);
 }
 
 int32_t detect_mnemonic(char *line)
@@ -485,15 +428,7 @@ void setup_mnemonics_alphabet(void)
 	json_error_t error;
 	mnemo = json_load_file(config_location, 0, &error);
 	
-	if (mnemo == NULL) 
-	{
-		const char *err_msg = "Error opening mnemonics config file \"%s\"";
-		const size_t errlen = strlen(err_msg) + strlen(config_location) + 1;
-		char *err = (char*)malloc(errlen * sizeof(char));
-		MALLOC_NULL_CHECK(err);
-		snprintf(err, errlen, err_msg, config_location);
-		progstop(err, 1);
-	}
+	if (mnemo == NULL) progstop(1, "Error opening mnemonics config file \"%s\"", config_location);
 }
 
 void free_mnemonics_alphabet(void)

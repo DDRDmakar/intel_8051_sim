@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 DDRDmakar
+ * Copyright (c) 2018-2019 DDRDmakar
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -169,12 +169,12 @@ uint32_t hex_str_to_uint32(char *str)
 	char *newstr_reserve_to_free = newstr;
 	
 	const char *errstr = "ERROR - wrong hex string format";
-	if (!str) progstop(errstr, 1);
+	if (!str) progstop(1, errstr);
 	while (newstr[0] && (newstr[0] == ' ' || newstr[0] == '#')) ++newstr;
 	while (newstr[0] && newstr[strlen(newstr) - 1] == ' ') newstr[strlen(newstr) - 1] = '\0';
 	if (!newstr[0]) return 0;
 	
-	if (!is_uhex_num(newstr)) progstop(errstr, 1);
+	if (!is_uhex_num(newstr)) progstop(1, errstr);
 	
 	uint32_t result = strtoul(newstr, NULL, 16);
 	free(newstr_reserve_to_free);

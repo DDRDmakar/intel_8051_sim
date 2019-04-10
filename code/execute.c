@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 DDRDmakar
+ * Copyright (c) 2018-2019 DDRDmakar
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -48,7 +48,7 @@
 	{ \
 		pthread_cancel(execution_interrupt_checker_thread); \
 		thread_status = pthread_join(execution_interrupt_checker_thread, (void**)&thread_status_addr); \
-		if (thread_status != THREAD_SUCCESS) progstop("Error joining checker thread", THREAD_ERROR_JOIN); \
+		if (thread_status != THREAD_SUCCESS) progstop(THREAD_ERROR_JOIN, "Error joining checker thread"); \
 		checker_thread_started = 0; \
 	}
 #define START_CHECKER_THREAD \
@@ -61,7 +61,7 @@
 			execution_interrupt_checker,         \
 			&execution_interrupt_checker_args    \
 		);                                       \
-		if (thread_status != 0) progstop("Error - unable to create checker thread", THREAD_ERROR_CREATE); \
+		if (thread_status != 0) progstop(THREAD_ERROR_CREATE, "Error - unable to create checker thread"); \
 		checker_thread_started = 1; \
 	}
 #define ENTER_PRESSED execution_interrupt_checker_args.flag == 1
@@ -88,7 +88,7 @@ int execute(Memory *mem)
 	
 	size_t tpc; // Temporary PC
 	
-	if (extvar->endpoint == -1) progerr("Warning - endpoint was not set manually or automatically.");
+	if (extvar->endpoint == -1) errlogprint("Warning - endpoint was not set manually or automatically.");
 	
 	// Execution interrupt checker thread
 	pthread_t execution_interrupt_checker_thread;
@@ -111,14 +111,14 @@ int execute(Memory *mem)
 		
 		if (current_instruction.i == NULL || current_instruction.n_bytes == 0) 
 		{
-			const char *err_msg = "Unknown instruction \"%s\" (OPCODE #%02X) at address #%04X";
-			// ALLOCATE length of error message + mnemonic length + opcode + PC + 1
-			size_t errlen = strlen(err_msg) + (mem->PM_str ? strlen(mem->PM_str[tpc]) : 0) + 2 + 4 + 1;
-			char *err = (char*)malloc(errlen * sizeof(char));
-			MALLOC_NULL_CHECK(err);
-			snprintf(err, errlen, err_msg, (mem->PM_str ? mem->PM_str[tpc] : ""), (unsigned int)mem->PM.EPM[tpc], (unsigned int)tpc);
-			progerr(err);
-			return 1;
+			errlogprint(
+				"Error - unknown instruction \"%s\" (OPCODE #%02X) at address #%04X", 
+				(mem->PM_str ? mem->PM_str[tpc] : ""), 
+				(unsigned int)mem->PM.EPM[tpc], 
+				(unsigned int)tpc
+			);
+			IncrPC_1;
+			continue;
 		}
 		
 		if (extvar->debug)
@@ -288,7 +288,7 @@ void breakpoint(Memory *mem)
 			if (addr < maxaddr) printf("value #%02X\n", (first == 'p' ? mem->PM.EPM[addr] : mem->DM.EDM[addr]));
 			else printf("Error - address is too big. Try again: ");
 		}
-		else printf("Error - wrong address. Try again: ");
+		else printf("Error - wrong command. Print \"help\" to get list of commands. Try again: ");
 	}
 }
 
@@ -358,7 +358,7 @@ void memory_to_file(Memory *mem, char *filename)
 	json_t *root = json_object();
 	
 	char *pc_str = uint32_to_hex_str(mem->PC);
-	if (!pc_str) progstop("Error converting PC into hex string", 1);
+	if (!pc_str) progstop(1, "Error converting PC into hex string");
 	// PC
 	json_object_set_new(root, "PC", json_string(pc_str));
 	
@@ -369,7 +369,7 @@ void memory_to_file(Memory *mem, char *filename)
 	for (size_t i = 0; i < REGISTERS_COUNT; ++i)
 	{
 		register_strings[i] = uint32_to_hex_str(mem->DM.RDM[register_address_array[i]]);
-		if (!register_strings[i]) progstop("Error converting register into hex string", 1);
+		if (!register_strings[i]) progstop(1, "Error converting register into hex string");
 		json_object_set_new(root, register_mnemo_array[i], json_string(register_strings[i]));
 	}
 	

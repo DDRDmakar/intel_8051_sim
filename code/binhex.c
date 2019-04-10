@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 DDRDmakar
+ * Copyright (c) 2018-2019 DDRDmakar
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -41,15 +41,7 @@ void setup_memory_bin(Memory *mem)
 	MALLOC_NULL_CHECK(buffer);
 	
 	buffer = read_bin_file_cwd(buffer, program_memory_size, extvar->input_file_name);
-	if (!buffer)
-	{
-		const char *err_msg = "Error opening memory file \"%s\"";
-		const size_t errlen = strlen(err_msg) + strlen(extvar->input_file_name) + 1;
-		char *err = (char*)malloc(errlen * sizeof(char));
-		MALLOC_NULL_CHECK(err);
-		snprintf(err, errlen, err_msg, extvar->input_file_name);
-		progstop(err, 1);
-	}
+	if (!buffer) progstop(1, "Error opening memory file \"%s\"", extvar->input_file_name);
 	
 	// Set program end point
 	if (extvar->endpoint == -1)

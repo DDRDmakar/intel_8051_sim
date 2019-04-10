@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 DDRDmakar
+ * Copyright (c) 2018-2019 DDRDmakar
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -51,7 +51,7 @@ void show_help(void)
 
 int main(int argc, char** argv)
 {
-	if (argc < 1 || strlen(argv[0]) == 0) progstop("Error - program started with no arguments", 1);
+	if (argc < 1 || strlen(argv[0]) == 0) progstop(1, "Error - program started with no arguments");
 	
 	setup_extvar();
 	
@@ -114,7 +114,7 @@ int main(int argc, char** argv)
 			}
 			
 			flag_is_single = (strlen(argv[i]) == 2);
-			if (flag_not_last && strlen(argv[i+1]) == 0) progstop("Error - empty argument.", 1);
+			if (flag_not_last && strlen(argv[i+1]) == 0) progstop(1, "Error - empty argument.");
 			
 			for (j = 1; j < strlen(argv[i]); ++j)
 			{
@@ -135,7 +135,7 @@ int main(int argc, char** argv)
 							++i;
 							goto leave_flag_loop;
 						}
-						else progstop("Incorrect argument - input file name", 1);
+						else progstop(1, "Incorrect argument - input file name");
 						break;
 					}
 					case 'o': 
@@ -147,7 +147,7 @@ int main(int argc, char** argv)
 							++i;
 							goto leave_flag_loop;
 						}
-						else progstop("Incorrect argument - output file name", 1);
+						else progstop(1, "Incorrect argument - output file name");
 						break;
 					}
 					case 'c':
@@ -155,12 +155,12 @@ int main(int argc, char** argv)
 						ref_flag_clk:;
 						if (flag_is_single && flag_not_last)
 						{
-							if (!is_udec_num(argv[i+1])) progstop("Incorrect argument - MCU clock period", 1);
+							if (!is_udec_num(argv[i+1])) progstop(1, "Incorrect argument - MCU clock period");
 							extvar->clk = strtoul(argv[i+1], NULL, 10);
 							++i;
 							goto leave_flag_loop;
 						}
-						else progstop("Incorrect argument - MCU clock period", 1);
+						else progstop(1, "Incorrect argument - MCU clock period");
 						break;
 					}
 					case 'v':
@@ -175,11 +175,11 @@ int main(int argc, char** argv)
 						{
 							if (strcmp(argv[i+1], "bin") == 0) extvar->mode = 0;
 							else if (strcmp(argv[i+1], "text") == 0) extvar->mode = 1;
-							else progstop("Incorrect argument - input file type", 1);
+							else progstop(1, "Incorrect argument - input file type");
 							++i;
 							goto leave_flag_loop;
 						}
-						else progstop("Incorrect argument - input file type", 1);
+						else progstop(1, "Incorrect argument - input file type");
 						break;
 					}
 					case 'e':
@@ -196,7 +196,7 @@ int main(int argc, char** argv)
 							++i;
 							goto leave_flag_loop;
 						}
-						else progstop("Incorrect argument - exitpoint location", 1);
+						else progstop(1, "Incorrect argument - exitpoint location");
 						
 						break;
 					}
@@ -228,7 +228,7 @@ int main(int argc, char** argv)
 							++i;
 							goto leave_flag_loop;
 						}
-						else progstop("Incorrect argument - breakpoint location", 1);
+						else progstop(1, "Incorrect argument - breakpoint location");
 						
 						break;
 					}
@@ -261,7 +261,7 @@ int main(int argc, char** argv)
 							++i;
 							goto leave_flag_loop;
 						}
-						else progstop("Incorrect argument - savepoint location", 1);
+						else progstop(1, "Incorrect argument - savepoint location");
 						
 						break;
 					}
@@ -274,12 +274,7 @@ int main(int argc, char** argv)
 					default:
 					{
 						ref_unknown_flag:;
-						const char *err_msg = "Unknown flag %s";
-						size_t errlen = strlen(err_msg) + strlen(argv[i]) + 1;
-						char *err = (char*)malloc(errlen * sizeof(char));
-						MALLOC_NULL_CHECK(err);
-						snprintf(err, errlen, err_msg, argv[i]);
-						progstop(err, 1);
+						progstop(1, "Unknown flag %s", argv[i]);
 					}
 				}
 			}
@@ -288,7 +283,7 @@ int main(int argc, char** argv)
 	}
 	
 	if (extvar->output_file_name == NULL) extvar->output_file_name = "memory.json";
-	if (extvar->input_file_name == NULL) progstop("Error - input file name is not set.", 1);
+	if (extvar->input_file_name == NULL) progstop(1, "Error - input file name is not set.");
 	
 #ifdef _DEBUGINFO
 	printf("STRUCTURE OF EXTVAR:\n\tEPM\t%d\n\tEDM\t%d\n\tclk\t%d\n\tdebug\t%d\n\tmode\t%d\n\tverbose\t%d\n\tproduce_file\t%d\n\tlocation\t%s\n\toutput file name\t%s\n\tinput file name\t%s\n",
@@ -332,7 +327,7 @@ int main(int argc, char** argv)
 	{
 		case 0: { setup_memory_bin(m); break; }
 		case 1: { setup_memory_text(m); break; }
-		default: { progstop("Error - incorrect simulator mode selected", 1); }
+		default: { progstop(1, "Error - incorrect simulator mode selected"); }
 	}
 	
 	// Convert bin and ihex files into JSON text format
