@@ -23,7 +23,7 @@ Options:
                  Example: -b ^2C
     --nobreak    Ignore breakpoints
     -s --save    Add savepoint
-                 Argument is address (unsigned hex), where breakpoint
+                 Argument is address (unsigned hex), where savepoint
                  will be placed.
                  ^ before address means, that snapshot will be made
                  before this instruction.

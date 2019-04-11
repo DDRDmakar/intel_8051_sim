@@ -88,7 +88,7 @@ uint8_t *read_bin_file_internal(uint8_t *destination, const size_t maxlength, co
 void write_text_file_internal(const char *filename, const char *str)
 {
 	FILE *outfile = fopen(filename, "w");
-	if(!outfile) progstop(1, "Error creating file \"%s\"\n", filename);
+	if(!outfile) progstop(1, "Error creating file \"%s\"", filename);
 	fprintf(outfile, "%s", str);
 	fclose(outfile);
 }
@@ -96,7 +96,7 @@ void write_text_file_internal(const char *filename, const char *str)
 void write_bin_file_internal(const char *filename, const uint8_t *buffer, const size_t len)
 {
 	FILE *outfile = fopen(filename, "wb");
-	if(!outfile) progstop(1, "Error creating file \"%s\"\n", filename);
+	if(!outfile) progstop(1, "Error creating file \"%s\"", filename);
 	fwrite(buffer, sizeof(uint8_t), len, outfile);
 	fclose(outfile);
 }

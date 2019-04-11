@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <string.h>
 
 #include "headers/error.h"
 
@@ -44,7 +45,7 @@ void errlog(const char *format, va_list args)
 	}
 	fprintf(f, "%s    ", buffer);
 	vfprintf(f, format, args);
-	fprintf(f, "\n");
+	if (format[strlen(format)-1] != '\n') fprintf(f, "\n");
 	fclose(f);
 }
 
@@ -53,8 +54,9 @@ void progstop(const int errcode, const char *format, ...)
 	va_list args;
 	va_start(args, format);
 	errlog(format, args);
+	va_start(args, format);
 	vfprintf(stderr, format, args);
-	fprintf(stderr, "\n");
+	if (format[strlen(format)-1] != '\n') fprintf(stderr, "\n");
 	exit(errcode);
 }
 
@@ -63,8 +65,9 @@ void errlogprint(const char *format, ...)
 	va_list args;
 	va_start(args, format);
 	errlog(format, args);
+	va_start(args, format);
 	vfprintf(stderr, format, args);
-	fprintf(stderr, "\n");
+	if (format[strlen(format)-1] != '\n') fprintf(stderr, "\n");
 }
 
 
