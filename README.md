@@ -33,7 +33,8 @@ gcc -lm -Os -std=c11 -pedantic -Wextra -Wall -l pthread -l jansson -D _ENDIANNES
 gcc -lm -Os -std=c11 -pedantic -Wextra -Wall -l pthread -l jansson -D _ENDIANNESS=0 -o sim8051 main.o mnemonic.o file.o error.o execute.o tools.o binhex.o
 ```
 After build you get binary executable "sim8051". Run it.  
-**IMPORTANT!!** - Binary file should stay in one directory with "resources" folder.
+**IMPORTANT!!** - Binary file should stay in one directory with "resources" folder.  
+
 Using emulator 
 --------------
 This emulator uses different modes, selected by flags:
