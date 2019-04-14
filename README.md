@@ -38,23 +38,23 @@ Using emulator
 --------------
 This emulator uses different modes, selected by flags:
 
-Flag                | Description
-------------------- | --------------------------------------------------------------------------
-**-h --help**       | Display basic information about program (get this information in terminal)
-**-d --debug**      | Enable debugging messages (Information about breakpoints and savepoints)
-**-i --infile**     | Name of input program file	Example: -i myfile
-**-o --outfle**     | Name of output file and snapshots	Default name: "memory"	Example: -o myfile
-**-c --clk**        | Time delay between instructions execution (ms)	Default value is 0	Example: -c 1000
-**-v --verbose**    | Verbose mode. Shows instructions sequence in console.
-**-m --mode**       | Type of input program file (bin or text)	Example: -m bin
-**-b --break**      | Add breakpoint.	Argument is address (unsigned hex), where breakpoint will be placed.	^ before address means, that breakpoint will be activated before this instruction.	_ before address means, that breakpoint will be activated after this instruction.	Example: -b ^2C
-**--nobreak**       | Ignore breakpoints
-**-s --save**       | Add savepoint	Argument is address (unsigned hex), where savepoint will be placed.	^ before address means, that snapshot will be made before this instruction.	_ before address means, that snapshot will be made after this instruction.	Example: -s _2C
-**-z --convert**    | Convert input binary file into text snapshot
-**-e --end**        | Define program end point.	Argument is address (unsigned hex)	If PC is > this value, program finishes and saves final snapshot into file.	Example: -e E6
-**--epm**           | Enable external program memory support (64 KiB) (default resident program memory is 4 KiB)
-**--edm**           | Enable external data memory support (64 KiB) (default resident data memory is 256 bytes)
-**--step**          | Step-by-step mode. Execute instructions one-by-one pressing Enter.
+Flag                | Description                    | Default value | Example
+------------------- | -------------------------------|---------------|--------------------------
+**-h --help**       | Display basic information about program (get this information in terminal) |   | -h
+**-d --debug**      | Enable debugging messages (Information about breakpoints and savepoints) | | -d
+**-i --infile**     | Name of input program file | **essential argument** | -i myfile
+**-o --outfle**     | Name of output file and snapshots	| "memory" | -o myfile
+**-c --clk**        | Time delay between instructions execution (ms) | 0 | -c 1000
+**-v --verbose**    | Verbose mode. Shows instructions sequence in console | | -v
+**-m --mode**       | Type of input program file (bin or text) | text mode | -m bin
+**-b --break**      | Add breakpoint.	Argument is address (unsigned hex), where breakpoint will be placed.	^ before address means, that breakpoint will be activated before this instruction.	_ before address means, that breakpoint will be activated after this instruction. |   | -b ^2C
+**--nobreak**       | Ignore breakpoints | false | --nobreak
+**-s --save**       | Add savepoint	Argument is address (unsigned hex), where savepoint will be placed.	^ before address means, that snapshot will be made before this instruction.	_ before address means, that snapshot will be made after this instruction. |   | -s _2C
+**-z --convert**    | Convert input binary file into text snapshot | false | -z
+**-e --end**        | Define program end point.	Argument is address (unsigned hex)	If PC is > this value, program finishes and saves final snapshot into file.	|   | -e E6
+**--epm**           | Enable external program memory support (64 KiB) (default resident program memory is 4 KiB) | | --epm
+**--edm**           | Enable external data memory support (64 KiB) (default resident data memory is 256 bytes) | | --edm
+**--step**          | Step-by-step mode. Execute instructions one-by-one pressing Enter | | --step
 
 **Running program**
 As an example, let's run program, which performs bubble sort of array (16 elements)
