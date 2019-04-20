@@ -81,7 +81,7 @@ char *memory_to_str(uint8_t *storage, size_t size)
 	
 	for (size_t i = 0; i < size; ++i)
 	{
-		if (i % 8 == 0)
+		if (i % TEXT_FILE_ADDRESS_INSERT_PERIOD == 0)
 		{
 			// max comment length is 14
 			const size_t comment_len = 14;
@@ -119,7 +119,7 @@ char *program_memory_to_str(Memory *mem, uint8_t *storage, size_t size)
 	
 	for (size_t i = 0; i < size; ++i)
 	{
-		if (i % 8 == 0)
+		if (i % TEXT_FILE_ADDRESS_INSERT_PERIOD == 0)
 		{
 			// max comment length is 14
 			const size_t comment_len = 14;
@@ -286,3 +286,24 @@ void remove_doubled_spaces(char *str)
 	}
 }
 
+void insert_newlines_before_addresses(char *str)
+{
+	char *current_place;
+	char pattern[100];
+	strcpy(pattern, " \'addr");
+	
+	current_place = strstr(str, pattern);
+	while (current_place)
+	{
+		*current_place = '\n';
+		current_place = strstr(current_place, pattern);
+	}
+	
+	strcpy(pattern, ", \"");
+	current_place = strstr(str, pattern);
+	while (current_place)
+	{
+		*current_place = '\n';
+		current_place = strstr(current_place, pattern);
+	}
+}

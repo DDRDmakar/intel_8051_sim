@@ -421,6 +421,7 @@ void memory_to_file(Memory *mem, char *filename)
 	json_object_set_new(root, "data", json_string(data));
 	
 	char *result = json_dumps(root, 0);
+	insert_newlines_before_addresses(result);
 	
 	write_text_file_cwd(filename, result);
 	

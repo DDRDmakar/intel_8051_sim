@@ -37,5 +37,6 @@ char *uint32_to_hex_str(uint32_t value);
 uint32_t hex_str_to_uint32(char *str);
 void remove_doubled_spaces(char *str);
 char** text_split(const char *str, const char *sep);
+void insert_newlines_before_addresses(char *str);
 
 #endif
