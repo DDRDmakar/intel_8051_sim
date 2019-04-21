@@ -145,8 +145,9 @@ int execute(Memory *mem)
 			{
 				const char *current_mnemonic_from_text = mem->PM_str ? mem->PM_str[tpc] : NULL;
 				const char *current_mnemonic = 
-					(
+					(	// If we don't have text representation
 						!current_mnemonic_from_text ||
+						// Or text representation is just code
 						(strlen(current_mnemonic_from_text) >= 2 && current_mnemonic_from_text[0] == '#' && is_uhex_num(current_mnemonic_from_text+1)) ||
 						(strlen(current_mnemonic_from_text) >= 2 && current_mnemonic_from_text[0] == '*' && is_udec_num(current_mnemonic_from_text+1)) ||
 						(strlen(current_mnemonic_from_text) >= 1 && is_ubin_num(current_mnemonic_from_text+1))
@@ -244,7 +245,7 @@ int execute(Memory *mem)
 
 // x - string to match command name
 // n - number of arguments
-#define BREAKPOINT_IF_COMMAND(x, n) if (!strcmp(breakpoint_args[0], x) && (linelen <= (n) || !breakpoint_args[n]))
+#define BREAKPOINT_IF_COMMAND(x, n) if (!strcmp(breakpoint_args[0], x) && !breakpoint_args[n])
 
 void breakpoint(Memory *mem)
 {
@@ -268,10 +269,6 @@ void breakpoint(Memory *mem)
 		
 		char** breakpoint_args = text_split(buffer, " ");
 		
-		int i;
-		for (i = 0; i < BREAKPOINT_BUFFER_LEN && breakpoint_args[i]; ++i)
-			printf("Argument %d is |%s|\n", i, breakpoint_args[i]);
-		
 		if (!breakpoint_args || !(*breakpoint_args)) break;
 		
 		// Make snapshot
@@ -294,12 +291,10 @@ void breakpoint(Memory *mem)
 			(
 				!strcmp(breakpoint_args[0], "exit") ||
 				!strcmp(breakpoint_args[0], "quit") ||
+				!strcmp(breakpoint_args[0], "stop") ||
 				!strcmp(breakpoint_args[0], "q")
-			) 
-			&&
-			(
-				(linelen <= (1) || !breakpoint_args[1])
-			)
+			) && 
+			!breakpoint_args[1]
 		) 
 		{
 			exit(0);
@@ -307,28 +302,58 @@ void breakpoint(Memory *mem)
 		
 		if (
 			(
-				!strcmp(breakpoint_args[0], "p") ||
-				!strcmp(breakpoint_args[0], "d")
-			) 
-			&&
-			(
-				(linelen <= (2) || !breakpoint_args[2])
-			)
+				!strcmp(breakpoint_args[0], "p") || // Program memory
+				!strcmp(breakpoint_args[0], "d")    // Data memory
+			) &&
+			linelen >= 3
 		)
 		{
-			if (breakpoint_args[1] && strlen(breakpoint_args[1]) <= 4 && is_uhex_num(breakpoint_args[1]))
+			uint8_t is_program = !strcmp(breakpoint_args[0], "p");
+			
+			if (
+				(
+					breakpoint_args[1] && 
+					!breakpoint_args[2] && 
+					strlen(breakpoint_args[1]) <= 4 && 
+					is_uhex_num(breakpoint_args[1])
+				) || (
+					breakpoint_args[2] && 
+					!breakpoint_args[3] && 
+					strlen(breakpoint_args[1]) <= 4 && 
+					strlen(breakpoint_args[2]) <= 4 && 
+					is_uhex_num(breakpoint_args[1]) && 
+					is_uhex_num(breakpoint_args[2])
+				)
+			)
 			{
-				uint8_t is_program = !strcmp(breakpoint_args[0], "p");
-				
 				const size_t maxaddr = 
 				is_program ? 
 				(extvar->EPM_active ? EPM_SIZE : RPM_SIZE) :
 				(extvar->EDM_active ? EDM_SIZE : RDM_SIZE) ;
 				
-				uint32_t addr = strtoul(breakpoint_args[1], NULL, 16);
-				if (addr < maxaddr) printf("value #%02X\n", is_program ? mem->PM.EPM[addr] : mem->DM.EDM[addr]);
-				else printf("Error - address is too big. Try again: ");
+				uint32_t addr  = strtoul(breakpoint_args[1], NULL, 16);
+				uint32_t addr2 = addr;
+				
+				if (breakpoint_args[2])
+				{
+					addr2 = strtoul(breakpoint_args[2], NULL, 16);
+					if (addr2 < addr)  printf("Error - second address should be >= first address. Try again: ");
+					if (addr > maxaddr || addr2 > maxaddr) printf("Error - address is too big. Try again: ");
+					
+					for (uint32_t i = addr; i <= addr2; ++i)
+					{
+						if (i == addr || i % 8 == 0) printf("\naddr [#%04X]:", i);
+						printf(" #%02X", is_program ? mem->PM.EPM[i] : mem->DM.EDM[i]);
+					}
+					printf("\n");
+				}
+				else
+				{
+					if (addr < maxaddr) printf("addr [#%04X]: value #%02X\n", addr, is_program ? mem->PM.EPM[addr] : mem->DM.EDM[addr]);
+					else printf("Error - address is too big. Try again: ");
+				}
 			}
+			else printf("Error - wrong address. Try again: ");
 		}
 		else printf("Error - wrong command. Print \"help\" to get list of commands. Try again: ");
 	}
@@ -390,6 +415,37 @@ void snapshot(Memory *mem)
 void snapshot_end(Memory *mem)
 {
 	memory_to_file(mem, extvar->output_file_name);
+}
+
+void insert_newlines_before_addresses(char *str)
+{
+	char *current_place = str;
+	
+	/*
+	if (extvar->mode == 1) // Text mode
+	{
+		current_place = strstr(current_place, "\", \"data\": \"\'addr 0000\' ");
+		if (!current_place) current_place = str;
+	}
+	*/
+	
+	char pattern[100];
+	
+	strcpy(pattern, " \'addr");
+	current_place = strstr(current_place, pattern);
+	while (current_place)
+	{
+		*current_place = '\n';
+		current_place = strstr(current_place, pattern);
+	}
+	
+	strcpy(pattern, ", \"");
+	current_place = strstr(str, pattern);
+	while (current_place)
+	{
+		*current_place = '\n';
+		current_place = strstr(current_place, pattern);
+	}
 }
 
 void memory_to_file(Memory *mem, char *filename)

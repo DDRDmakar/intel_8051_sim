@@ -33,9 +33,10 @@
 
 int is_udec_num(const char *line)
 {
-	if (!line || strlen(line) == 0) return 0;
+	size_t line_len = line ? strlen(line) : 0;
+	if (line_len == 0) return 0;
 	
-	for (size_t i = 0; i < strlen(line); ++i)
+	for (size_t i = 0; i < line_len; ++i)
 	{
 		if (line[i] < '0' || '9' < line[i]) return 0;
 	}
@@ -43,9 +44,10 @@ int is_udec_num(const char *line)
 }
 int is_ubin_num(const char *line)
 {
-	if (!line || strlen(line) == 0) return 0;
+	size_t line_len = line ? strlen(line) : 0;
+	if (line_len == 0) return 0;
 	
-	for (size_t i = 0; i < strlen(line); ++i)
+	for (size_t i = 0; i < line_len; ++i)
 	{
 		if (line[i] != '0' && line[i] != '1') return 0;
 	}
@@ -53,9 +55,10 @@ int is_ubin_num(const char *line)
 }
 int is_uhex_num(const char *line)
 {
-	if (!line || strlen(line) == 0) return 0;
+	size_t line_len = line ? strlen(line) : 0;
+	if (line_len == 0) return 0;
 	
-	for (size_t i = 0; i < strlen(line); ++i)
+	for (size_t i = 0; i < line_len; ++i)
 	{
 		if (
 			!('0' <= line[i] && line[i] <= '9') &&
@@ -283,27 +286,5 @@ void remove_doubled_spaces(char *str)
 		
 		++read_pointer;
 		++write_pointer;
-	}
-}
-
-void insert_newlines_before_addresses(char *str)
-{
-	char *current_place;
-	char pattern[100];
-	strcpy(pattern, " \'addr");
-	
-	current_place = strstr(str, pattern);
-	while (current_place)
-	{
-		*current_place = '\n';
-		current_place = strstr(current_place, pattern);
-	}
-	
-	strcpy(pattern, ", \"");
-	current_place = strstr(str, pattern);
-	while (current_place)
-	{
-		*current_place = '\n';
-		current_place = strstr(current_place, pattern);
 	}
 }
