@@ -58,8 +58,23 @@ Flag                | Description                    | Default value | Example
 **--epm**           | Enable external program memory support (64 KiB) (default resident program memory is 4 KiB) | | --epm
 **--edm**           | Enable external data memory support (64 KiB) (default resident data memory is 256 bytes) | | --edm
 **--step**          | Step-by-step mode. Execute instructions one-by-one pressing Enter | | --step
+  
+In addition to flags, which we set on program startup, we can also use special commands during program execution  
+(when you are in the debug mode)  
+List of available commands is here:  
+
+Command  | Description | Example
+---------|-------------|--------
+**save** | Make snapshot of current machine state into file | save
+**step** | Enable or disable step-by-step mode | step
+**exit**<br/>**stop**<br/>**quit**<br/>**q** | Exit simulator (Machine state won't be saved) | exit
+**p** | Get program memory contents<br/>After this command you should write address of memory cell in program memory or two addresses (begin and end).<br/> Addresses should be unsigned hexadecimal numbers | p 2F<br/>p 2F 3A
+**d** | Get data memory contents<br/>Everything is the same, but for data memory | d 2F<br/>d 2F 3A
+**clk** | Change time period between commands execution. Argument is time in miliseconds | clk 1000
 
 **Running program**
+-------------------
+
 As an example, let's run program, which performs bubble sort of array (16 elements)
 ```
 [DDRDmakar@localhost bubblesort]$ '../../build/sim8051' -dv -c 10 --mode text -i sort.json -o snapshots/dump.json
