@@ -1,5 +1,7 @@
 Intel 8051 simulator
 ====================
+![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `Warinig! Now this simulator works under UNIX-like systems only. Windows version is under develop`
+  
 MCS51 core program model, which allows you to run and debug programs  
 (binary and text formats)  
 add breakpoints, look memory contents and make memory dumps.  
